@@ -3,13 +3,24 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using ReceiptReader.Models;
+using System;
 
 namespace ReceiptReader;
 
 internal class Program
 {
+    private const string BaseUrl = "https://mapr.tax.gov.me/";
+    private const string VerifyEndpoint = "ic/#/verify?iic=";
+    private static readonly string VerificationUrlTemplate = $"{BaseUrl}{VerifyEndpoint}";
+
     static async Task Main(string[] args)
     {
+        string? url;
+        while (!IsUrlValid(url = Console.ReadLine()?.Trim()))
+        {
+            Console.Error.WriteLine("Invalid URL provided. Please try again:\n");
+        }
+
         // HtmlAgilityPack parses static HTML only;
         // use a headless browser if JavaScript-rendered content must load first.
         var options = new ChromeOptions();
@@ -19,8 +30,7 @@ internal class Program
         options.AddArgument("--blink-settings=imagesEnabled=false");
 
         using var driver = new ChromeDriver(options);
-        var url = Console.ReadLine()?.Trim();
-
+        
         driver.Navigate().GoToUrl(url);
 
         // Wait for the page to load completely
@@ -80,5 +90,12 @@ internal class Program
         {
             Console.WriteLine($"Title: {item.Title}, Unit Price: {item.UnitPrice}, Total Price: {item.InvoiceItemPrice}, Quantity: {item.Quantity}");
         }
+    }
+
+    private static bool IsUrlValid(string? url)
+    {
+        return !string.IsNullOrEmpty(url) &&
+               Uri.IsWellFormedUriString(url, UriKind.Absolute) &&
+               url.StartsWith(VerificationUrlTemplate);
     }
 }
