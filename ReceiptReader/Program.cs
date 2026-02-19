@@ -22,7 +22,13 @@ internal class Program
 
             Console.WriteLine($"You spent {invoiceResult.TotalSum} in '{invoiceResult.ShopName}' at {invoiceResult.ShoppingDate}");
 
-            foreach (var item in invoiceResult?.BoughtItems)
+            if (invoiceResult?.BoughtItems == null || invoiceResult.BoughtItems.Count == 0)
+            {
+                Console.WriteLine("No items found in the receipt.");
+                continue;
+            }
+
+            foreach (var item in invoiceResult.BoughtItems)
             {
                 Console.WriteLine($"Title: {item.Title}, Unit Price: {item.UnitPrice}, Total Price: {item.InvoiceItemPrice}, Quantity: {item.Quantity}");
             }
