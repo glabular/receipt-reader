@@ -26,7 +26,11 @@ internal class Program
         // Wait for the page to load completely
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
 
-        wait.Until(d => d.FindElement(By.ClassName("invoice-items-list")));
+        wait.Until(d => {
+            var elements = d.FindElements(By.ClassName("invoice-items-list"));
+
+            return elements.Count > 0 && elements[0].Displayed;
+        });
 
         var pageSource = driver.PageSource;
         var htmlDoc = new HtmlDocument();
