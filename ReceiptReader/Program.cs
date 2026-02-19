@@ -1,5 +1,4 @@
 ﻿using ReceiptReader.Services;
-using System;
 
 namespace ReceiptReader;
 
@@ -7,23 +6,28 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
-        Console.WriteLine("Please enter receipt URL:");
-        string? url;
-        while (!UrlValidator.IsUrlValid(url = Console.ReadLine()?.Trim()))
+        using var client = new ReceiptClient();
+
+        while (true)
         {
-            Console.Error.WriteLine("Invalid URL provided. Please try again:\n");
-        }
+            Console.WriteLine("Please enter receipt URL:");
+            var url = Console.ReadLine()?.Trim();
+            if (!UrlValidator.IsUrlValid(url))
+            {
+                Console.Error.WriteLine("Invalid URL provided. Please try again.\n");
+                continue;
+            }
 
-        using var browser = new BrowserEngine();
-        var pageSource = browser.GetPageSource(url!); 
-        var invoiceResult = InvoiceParser.ParseInvoicePage(pageSource);
-        var invoiceItems = invoiceResult?.BoughtItems;
+            var invoiceResult = client.GetInvoice(url!);
 
-        Console.WriteLine($"You spent {invoiceResult.TotalSum} in '{invoiceResult.ShopName}' at {invoiceResult.ShoppingDate}");
+            Console.WriteLine($"You spent {invoiceResult.TotalSum} in '{invoiceResult.ShopName}' at {invoiceResult.ShoppingDate}");
 
-        foreach (var item in invoiceItems)
-        {
-            Console.WriteLine($"Title: {item.Title}, Unit Price: {item.UnitPrice}, Total Price: {item.InvoiceItemPrice}, Quantity: {item.Quantity}");
+            foreach (var item in invoiceResult?.BoughtItems)
+            {
+                Console.WriteLine($"Title: {item.Title}, Unit Price: {item.UnitPrice}, Total Price: {item.InvoiceItemPrice}, Quantity: {item.Quantity}");
+            }
+
+            Console.WriteLine("-----\n\n");
         }
     }
 }
