@@ -43,30 +43,35 @@ internal class Program
         if (invoiceList != null)
         {
             var items = invoiceList.SelectNodes("./li[contains(@class,'invoice-item')]");
-            if (items != null)
+            if (items == null)
             {
-                foreach (var item in items)
-                {
-                    var heading = item.SelectSingleNode(".//li[contains(@class,'invoice-item--heading')]");
-                    var details = item.SelectSingleNode(".//li[contains(@class,'invoice-item--details')]");
-
-                    if (heading != null && details != null)
-                    {
-                        var invoiceItem = new InvoiceItem
-                        {
-                            Title = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
-                            UnitPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim() ?? string.Empty,
-                            InvoiceItemPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]")?.InnerText.Trim() ?? string.Empty,
-                            Quantity = details.SelectSingleNode(".//span[contains(@class,'invoice-item--quantity')]")?.InnerText.Trim() ?? string.Empty
-                        };
-
-                        invoiceItems.Add(invoiceItem);
-                    }
-                }
+                Console.Error.WriteLine("No invoice items found.");
+                return;
             }
+
+            foreach (var item in items)
+            {
+                var heading = item.SelectSingleNode(".//li[contains(@class,'invoice-item--heading')]");
+                var details = item.SelectSingleNode(".//li[contains(@class,'invoice-item--details')]");
+
+                if (heading == null)
+                {
+                    continue;
+                }
+
+                var invoiceItem = new InvoiceItem
+                {
+                    Title = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
+                    UnitPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim() ?? string.Empty,
+                    InvoiceItemPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]")?.InnerText.Trim() ?? string.Empty,
+                    Quantity = details.SelectSingleNode(".//span[contains(@class,'invoice-item--quantity')]")?.InnerText.Trim() ?? string.Empty
+                };
+
+                invoiceItems.Add(invoiceItem);                
+            }
+            
         }
 
-        // Print all items using class properties
         foreach (var item in invoiceItems)
         {
             Console.WriteLine($"Title: {item.Title}, Unit Price: {item.UnitPrice}, Total Price: {item.InvoiceItemPrice}, Quantity: {item.Quantity}");
