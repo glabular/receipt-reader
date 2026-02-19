@@ -14,10 +14,11 @@ internal class Program
             Console.Error.WriteLine("Invalid URL provided. Please try again:\n");
         }
 
-        var pageSource = BrowserEngine.GetPageSource(url!); 
-
+        using var browser = new BrowserEngine();
+        var pageSource = browser.GetPageSource(url!); 
         var invoiceResult = InvoiceParser.ParseInvoicePage(pageSource);
         var invoiceItems = invoiceResult?.BoughtItems;
+
         Console.WriteLine($"You spent {invoiceResult.TotalSum} in '{invoiceResult.ShopName}' at {invoiceResult.ShoppingDate}");
 
         foreach (var item in invoiceItems)

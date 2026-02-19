@@ -4,24 +4,30 @@ using OpenQA.Selenium.Support.UI;
 
 namespace ReceiptReader.Services;
 
-internal sealed class BrowserEngine
+internal sealed class BrowserEngine : IDisposable
 {
-    public static string GetPageSource(string url)
+    private readonly ChromeDriver _driver;
+    private readonly TimeSpan _timeout;
+
+    public BrowserEngine(TimeSpan? timeout = null)
     {
-        // HtmlAgilityPack parses static HTML only;
-        // use a headless browser if JavaScript-rendered content must load first.
+        _timeout = timeout ?? TimeSpan.FromSeconds(7);
+
         var options = new ChromeOptions();
 
         options.AddArgument("--headless");
         options.AddArgument("--disable-extensions");
         options.AddArgument("--blink-settings=imagesEnabled=false");
 
-        using var driver = new ChromeDriver(options);
+        _driver = new ChromeDriver(options);
+    }
 
-        driver.Navigate().GoToUrl(url);
+    public string GetPageSource(string url)
+    {
+        _driver.Navigate().GoToUrl(url);
 
         // Wait for the page to load completely
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+        var wait = new WebDriverWait(_driver, _timeout);
 
         wait.Until(d => {
             var elements = d.FindElements(By.ClassName("invoice-items-list"));
@@ -29,6 +35,8 @@ internal sealed class BrowserEngine
             return elements.Count > 0 && elements[0].Displayed;
         });
 
-        return driver.PageSource;
+        return _driver.PageSource;
     }
+
+    public void Dispose() => _driver.Quit();
 }
