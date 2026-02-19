@@ -2,6 +2,7 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
+using ReceiptReader.Models;
 
 namespace ReceiptReader;
 
@@ -35,27 +36,35 @@ internal class Program
             "//ul[contains(@class,'invoice-items-list') and contains(@class,'list-unstyled')]"
         );
 
+        var invoiceItems = new List<InvoiceItem>();
+
         if (invoiceList != null)
         {
-            // Loop through each top-level <li class="invoice-item"> inside the list
             var items = invoiceList.SelectNodes("./li[contains(@class,'invoice-item')]");
-
             if (items != null)
             {
                 foreach (var item in items)
                 {
-                    // Only look inside the heading <li> for the title, unit price, and price
                     var heading = item.SelectSingleNode(".//li[contains(@class,'invoice-item--heading')]");
                     if (heading != null)
                     {
-                        var title = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim();
-                        var unitPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim();
-                        var price = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]")?.InnerText.Trim();
+                        var invoiceItem = new InvoiceItem
+                        {
+                            Title = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
+                            UnitPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim() ?? string.Empty,
+                            InvoiceItemPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]")?.InnerText.Trim() ?? string.Empty
+                        };
 
-                        Console.WriteLine($"Title: {title}, Unit Price: {unitPrice}, Total Price: {price}");
+                        invoiceItems.Add(invoiceItem);
                     }
                 }
             }
+        }
+
+        // Print all items using class properties
+        foreach (var item in invoiceItems)
+        {
+            Console.WriteLine($"Title: {item.Title}, Unit Price: {item.UnitPrice}, Total Price: {item.InvoiceItemPrice}");
         }
     }
 }
