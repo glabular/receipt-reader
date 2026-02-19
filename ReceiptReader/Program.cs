@@ -1,8 +1,6 @@
 ﻿using HtmlAgilityPack;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Support.UI;
 using ReceiptReader.Models;
+using ReceiptReader.Services;
 using System;
 
 namespace ReceiptReader;
@@ -15,34 +13,14 @@ internal class Program
 
     static async Task Main(string[] args)
     {
+        Console.WriteLine("Please enter receipt URL:");
         string? url;
         while (!IsUrlValid(url = Console.ReadLine()?.Trim()))
         {
             Console.Error.WriteLine("Invalid URL provided. Please try again:\n");
-        }
+        }        
 
-        // HtmlAgilityPack parses static HTML only;
-        // use a headless browser if JavaScript-rendered content must load first.
-        var options = new ChromeOptions();
-
-        options.AddArgument("--headless");
-        options.AddArgument("--disable-extensions");
-        options.AddArgument("--blink-settings=imagesEnabled=false");
-
-        using var driver = new ChromeDriver(options);
-        
-        driver.Navigate().GoToUrl(url);
-
-        // Wait for the page to load completely
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
-
-        wait.Until(d => {
-            var elements = d.FindElements(By.ClassName("invoice-items-list"));
-
-            return elements.Count > 0 && elements[0].Displayed;
-        });
-
-        var pageSource = driver.PageSource;
+        var pageSource = BrowserEngine.GetPageSource(url!); 
         var htmlDoc = new HtmlDocument();
 
         htmlDoc.LoadHtml(pageSource);
