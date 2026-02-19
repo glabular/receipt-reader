@@ -9,14 +9,16 @@ internal class Program
     {
         Console.WriteLine("Please enter receipt URL:");
         string? url;
-        while (!UrlValidatior.IsUrlValid(url = Console.ReadLine()?.Trim()))
+        while (!UrlValidator.IsUrlValid(url = Console.ReadLine()?.Trim()))
         {
             Console.Error.WriteLine("Invalid URL provided. Please try again:\n");
         }
 
         var pageSource = BrowserEngine.GetPageSource(url!); 
 
-        var invoiceItems = InvoiceParser.ParseInvoicePage(pageSource);
+        var invoiceResult = InvoiceParser.ParseInvoicePage(pageSource);
+        var invoiceItems = invoiceResult?.BoughtItems;
+        Console.WriteLine($"You spent {invoiceResult.TotalSum} in '{invoiceResult.ShopName}' at {invoiceResult.ShoppingDate}");
 
         foreach (var item in invoiceItems)
         {

@@ -1,6 +1,6 @@
 ﻿namespace ReceiptReader.Services;
 
-internal sealed class UrlValidatior
+internal sealed class UrlValidator
 {
     private const string BaseUrl = "https://mapr.tax.gov.me/";
     private const string VerifyEndpoint = "ic/#/verify?iic=";
