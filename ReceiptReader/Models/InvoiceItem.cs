@@ -7,4 +7,6 @@ internal sealed class InvoiceItem
     public required string UnitPrice { get; set; }
 
     public required string InvoiceItemPrice { get; set; }
+
+    public required string Quantity { get; set; }
 }
