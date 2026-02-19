@@ -22,9 +22,9 @@ internal class Program
         driver.Navigate().GoToUrl(url);
         
         // Wait for the page to load completely
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(1000));
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
 
-        wait.Until(d => d.FindElement(By.TagName("body")));
+        wait.Until(d => d.FindElement(By.ClassName("invoice-items-list")));
 
         var pageSource = driver.PageSource;
         var htmlDoc = new HtmlDocument();
