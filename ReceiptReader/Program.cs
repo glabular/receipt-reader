@@ -15,6 +15,8 @@ internal class Program
         var options = new ChromeOptions();
 
         options.AddArgument("--headless");
+        options.AddArgument("--disable-extensions");
+        options.AddArgument("--blink-settings=imagesEnabled=false");
 
         using var driver = new ChromeDriver(options);
         var url = Console.ReadLine()?.Trim();
