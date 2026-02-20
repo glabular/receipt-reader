@@ -8,7 +8,7 @@ internal class Program
     {
         var telegramClient = new TelegramClient();
 
-        await telegramClient.Test();
+        await telegramClient.StartAsync();
 
         Console.ReadLine();
 
