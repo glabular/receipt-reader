@@ -6,6 +6,12 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
+        var telegramClient = new TelegramClient();
+
+        await telegramClient.Test();
+
+        Console.ReadLine();
+
         using var client = new ReceiptClient();
 
         while (true)
