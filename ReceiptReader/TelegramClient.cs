@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using ReceiptReader.Services;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -46,28 +47,22 @@ internal sealed class TelegramClient
         // Handle single photo
         if (msg.Photo != null && msg.Photo.Length > 0)
         {
-            var largestPhoto = msg.Photo.OrderByDescending(p => p.FileSize).First();
-            await SavePhotoAsync(largestPhoto.FileId);
+            var largestPhoto = msg.Photo.Last();
+            using var photoStream = await DownloadPhotoToMemoryAsync(largestPhoto.FileId);
+            var qrText = QrCodeReader.ReadQrCode(photoStream);
+            Console.WriteLine($"QR Code content: {qrText}");
         }
     }
 
-    private async Task SavePhotoAsync(string fileId)
+    private async Task<MemoryStream> DownloadPhotoToMemoryAsync(string fileId)
     {
         var file = await _bot.GetFile(fileId);
-
         if (file.FilePath == null)
-        {
-            return;
-        }
+            throw new InvalidOperationException("File path is null");
 
-        var fileName = $"{Guid.NewGuid()}.jpg";
-        var savePath = Path.Combine("downloads", fileName);
-
-        Directory.CreateDirectory("downloads");
-
-        await using var stream = File.Create(savePath);
-        await _bot.DownloadFile(file.FilePath, stream);
-
-        Console.WriteLine($"Image saved: {savePath}");
-    }
+        var memoryStream = new MemoryStream();
+        await _bot.DownloadFile(file.FilePath, memoryStream);
+        memoryStream.Position = 0; // reset stream for reading
+        return memoryStream;
+    }    
 }
