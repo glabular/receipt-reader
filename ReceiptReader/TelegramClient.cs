@@ -25,9 +25,33 @@ internal sealed class TelegramClient
     {
         Console.WriteLine($"Received {type} in {msg.Chat}");
 
-        if (msg.Text is not null && msg.Text == "/start")
+        var typeOfMessage = GetMessageType(msg);
+
+        switch (typeOfMessage)
         {
-            await _bot.SendMessage(msg.Chat.Id, "Welcome!");
+            case Enums.MessageType.StartCommand:
+                Console.WriteLine("Received /start command");
+                return;
+            case Enums.MessageType.ValidUrl:
+                Console.WriteLine("Received a valid URL");
+                return;
+            case Enums.MessageType.Photo:
+                Console.WriteLine("Received a photo");
+                return;
+            case Enums.MessageType.Album:
+                Console.WriteLine("Received photo album");
+                return;
+            case Enums.MessageType.Text:
+                Console.WriteLine("Received some text");
+                return;
+            case Enums.MessageType.Other:
+                default:
+                return;
+        }
+
+        if (msg.Text is not null && msg.Text == "/start")
+        { 
+            await _bot.SendMessage(msg.Chat.Id, "Welcome!"); 
         }
 
         if (msg.MediaGroupId != null)
@@ -64,5 +88,34 @@ internal sealed class TelegramClient
         await _bot.DownloadFile(file.FilePath, memoryStream);
         memoryStream.Position = 0; // reset stream for reading
         return memoryStream;
-    }    
+    }
+
+    private static Enums.MessageType GetMessageType(Message msg)
+    {
+        if (msg.MediaGroupId != null)
+        {
+            return Enums.MessageType.Album;
+        }
+        if (msg.Photo != null && msg.Photo.Length > 0)
+        {
+            return Enums.MessageType.Photo;
+        }
+        if (msg.Text != null)
+        {
+            var text = msg.Text.Trim();
+
+            if (text.Equals("/start", StringComparison.OrdinalIgnoreCase))
+            {
+                return Enums.MessageType.StartCommand;
+            }
+            else if (UrlValidator.IsUrlValid(text))
+            {
+                return Enums.MessageType.ValidUrl;
+            }
+
+            return Enums.MessageType.Text;
+        }
+
+        return Enums.MessageType.Other;
+    }
 }
