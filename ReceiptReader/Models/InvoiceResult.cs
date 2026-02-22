@@ -4,8 +4,6 @@ internal sealed class InvoiceResult
 {
     public string? ShopName { get; set; }
 
-    public string? ShopLocation { get; set; }
-
     public DateTime? ShoppingDate { get; set; }
 
     public List<InvoiceItem>? BoughtItems { get; set; }
