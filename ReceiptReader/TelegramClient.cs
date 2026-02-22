@@ -82,7 +82,20 @@ internal sealed class TelegramClient
 
     private async Task HandleUrlAsync(Message msg)
     {
-        throw new NotImplementedException();
+        var invoice = InvoiceParser.ParseInvoicePage(msg.Text!);
+
+        if (invoice != null)
+        {
+            try
+            {
+                _invoicesDbContext.AddInvoice(invoice);
+                Console.WriteLine("Invoice saved to database.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to save invoice: {ex.Message}");
+            }
+        }
     }
 
     private async Task HandleSinglePhotoAsync(Message msg)
