@@ -16,8 +16,18 @@ internal sealed class TelegramClient
     }
 
     public async Task StartAsync()
-    {        
-        var me = await _bot.GetMe();
+    {
+        try
+        {
+            var me = await _bot.GetMe();
+            Console.WriteLine($"{me.Username}: authentication successful.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to authenticate bot: {ex.Message}");
+            throw;
+        }
+
         _bot.OnMessage += OnMessage;
     }
 
