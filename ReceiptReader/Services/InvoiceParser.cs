@@ -15,7 +15,8 @@ internal sealed class InvoiceParser
         result.TotalSum = ParseTotal(htmlDoc);
         result.ShoppingDate = ParseDate(htmlDoc);
         result.ShopName = ParseShopName(htmlDoc);
-        result.BoughtItems = ParseInvoiceItems(htmlDoc);        
+        result.BoughtItems = ParseInvoiceItems(htmlDoc);  
+        result.URL = pageSource;
 
         return result;
     }
