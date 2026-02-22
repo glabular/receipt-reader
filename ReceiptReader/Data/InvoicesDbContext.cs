@@ -1,0 +1,14 @@
+﻿using Microsoft.EntityFrameworkCore;
+using ReceiptReader.Models;
+
+namespace ReceiptReader.Data;
+
+internal class InvoicesDbContext : DbContext
+{
+    internal DbSet<Invoice> Invoices { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer("Server=localhost;Database=InvoicesDb;Trusted_Connection=True;");
+    }
+}
