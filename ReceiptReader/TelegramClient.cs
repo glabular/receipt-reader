@@ -45,6 +45,7 @@ internal sealed class TelegramClient
                 return;
             case Enums.MessageType.ValidUrl:
                 Console.WriteLine("Received a valid URL");
+                await HandleUrlAsync(msg);
                 return;
             case Enums.MessageType.Photo:
                 Console.WriteLine("Received a photo");
@@ -75,6 +76,11 @@ internal sealed class TelegramClient
                 default:
                 return;
         }
+    }
+
+    private async Task HandleUrlAsync(Message msg)
+    {
+        throw new NotImplementedException();
     }
 
     private async Task HandleSinglePhoto(Message msg)
