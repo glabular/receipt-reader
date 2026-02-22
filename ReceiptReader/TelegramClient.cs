@@ -1,4 +1,5 @@
-﻿using ReceiptReader.Services;
+﻿using ReceiptReader.Data;
+using ReceiptReader.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -9,6 +10,7 @@ internal sealed class TelegramClient
 {
     private readonly TelegramBotClient _bot;
     private readonly HashSet<string> _processedGroups = [];
+    private readonly InvoicesDbContext _invoicesDbContext = new();
 
     public TelegramClient()
     {
