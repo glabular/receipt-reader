@@ -7,6 +7,12 @@ internal class InvoicesDbContext : DbContext
 {
     internal DbSet<Invoice> Invoices { get; set; }
 
+    public void AddInvoice(Invoice invoice)
+    {
+        Invoices.Add(invoice);
+        SaveChanges();
+    }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseSqlServer("Server=localhost;Database=InvoicesDb;Trusted_Connection=True;TrustServerCertificate=True");
