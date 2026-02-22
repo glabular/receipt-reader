@@ -6,9 +6,9 @@ namespace ReceiptReader.Services;
 
 internal sealed class InvoiceParser
 {
-    public static InvoiceResult? ParseInvoicePage(string pageSource)
+    public static Invoice? ParseInvoicePage(string pageSource)
     {
-        var result = new InvoiceResult();
+        var result = new Invoice();
         var htmlDoc = new HtmlDocument();
 
         htmlDoc.LoadHtml(pageSource);

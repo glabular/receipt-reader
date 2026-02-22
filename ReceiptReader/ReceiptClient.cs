@@ -12,7 +12,7 @@ internal sealed class ReceiptClient : IDisposable
         _browser = new BrowserEngine(browserTimeout);
     }
 
-    public InvoiceResult? GetInvoice(string url)
+    public Invoice? GetInvoice(string url)
     {
         var pageSource = _browser.GetPageSource(url);
 
