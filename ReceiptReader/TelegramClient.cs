@@ -88,7 +88,7 @@ internal sealed class TelegramClient
         {
             try
             {
-                _invoicesDbContext.AddInvoice(invoice);
+                await _invoicesDbContext.AddInvoiceAsync(invoice);
                 Console.WriteLine("Invoice saved to database.");
             }
             catch (Exception ex)
