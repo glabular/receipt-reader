@@ -41,7 +41,7 @@ internal sealed class TelegramClient
         {
             case Enums.MessageType.StartCommand:
                 Console.WriteLine("Received /start command");
-                await HandleStartCommand(msg);
+                await HandleStartCommandAsync(msg);
                 return;
             case Enums.MessageType.ValidUrl:
                 Console.WriteLine("Received a valid URL");
@@ -49,7 +49,7 @@ internal sealed class TelegramClient
                 return;
             case Enums.MessageType.Photo:
                 Console.WriteLine("Received a photo");
-                await HandleSinglePhoto(msg);
+                await HandleSinglePhotoAsync(msg);
                 return;
             // TODO: Come up with better way to handle albums without the hashset.
             case Enums.MessageType.Album:
@@ -65,7 +65,7 @@ internal sealed class TelegramClient
                 Console.WriteLine("Received photo album");
 
                 // Take only one photo from the album and pass to single photo handler
-                await HandleSinglePhoto(msg);   
+                await HandleSinglePhotoAsync(msg);   
 
                 return;
             case Enums.MessageType.Text:
@@ -83,7 +83,7 @@ internal sealed class TelegramClient
         throw new NotImplementedException();
     }
 
-    private async Task HandleSinglePhoto(Message msg)
+    private async Task HandleSinglePhotoAsync(Message msg)
     {
         var largestPhoto = msg.Photo.Last();
         using var photoStream = await DownloadPhotoToMemoryAsync(largestPhoto.FileId);
@@ -91,7 +91,7 @@ internal sealed class TelegramClient
         Console.WriteLine($"QR Code content: {qrText}");
     }
 
-    private async Task HandleStartCommand(Message msg)
+    private async Task HandleStartCommandAsync(Message msg)
     {
         await _bot.SendMessage(msg.Chat.Id, "Welcome!");
     }
