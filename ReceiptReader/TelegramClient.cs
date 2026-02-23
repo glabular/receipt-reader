@@ -99,32 +99,33 @@ internal sealed class TelegramClient
             Console.WriteLine("Invoice saved to database.");
 
             var sb = new StringBuilder();
-            sb.AppendLine("✅ **Invoice Added!**");
-            sb.AppendLine("---");
-            sb.AppendLine($"🛒 **Shop:** {invoice.ShopName ?? "Unknown"}");
-            sb.AppendLine($"📅 **Date:** {invoice.ShoppingDate?.ToString("dd.MM.yyyy HH:mm") ?? "N/A"}");
+            sb.AppendLine("✅ <b>Invoice Added!</b>");
+            sb.AppendLine("______________________________"); // Markdown --- doesn't work in HTML
+            sb.AppendLine($"🛒 <b>Shop:</b> {invoice.ShopName ?? "Unknown"}");
+            sb.AppendLine($"📅 <b>Date:</b> {invoice.ShoppingDate?.ToString("dd.MM.yyyy HH:mm") ?? "N/A"}");
             sb.AppendLine();
 
             if (invoice.BoughtItems != null && invoice.BoughtItems.Any())
             {
-                sb.AppendLine("📦 **Items:**");
+                sb.AppendLine("📦 <b>Items:</b>");
                 foreach (var item in invoice.BoughtItems)
                 {
                     var qty = item.Quantity.ToString("G29") ?? "0";
                     var unit = item.UnitPrice.ToString("N2") ?? "0.00";
                     var total = item.TotalPrice.ToString("N2") ?? "0.00";
 
-                    sb.AppendLine($"- **{item.Name}** | {qty}x{unit} = **{total}**");
+                    // Format: - Name | QtyxUnit = Total
+                    sb.AppendLine($"- {item.Name} | {qty}x{unit} = <b>{total}</b>");
                 }
             }
 
-            sb.AppendLine("---");
-            sb.AppendLine($"💰 **Total Sum:** {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
+            sb.AppendLine("______________________________");
+            sb.AppendLine($"💰 <b>Total Sum:</b> {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
 
             await _bot.SendMessage(
                 chatId: msg.Chat.Id,
                 text: sb.ToString(),
-                parseMode: ParseMode.Markdown // Enables the bold/bullet formatting
+                parseMode: ParseMode.Html // Enables the bold/bullet formatting
             );
         }
         catch (Exception ex)
