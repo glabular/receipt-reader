@@ -8,6 +8,7 @@ internal sealed class BrowserEngine : IDisposable
 {
     private readonly ChromeDriver _driver;
     private readonly TimeSpan _timeout;
+    private bool _disposed;
 
     public BrowserEngine(TimeSpan? timeout = null)
     {
@@ -38,5 +39,15 @@ internal sealed class BrowserEngine : IDisposable
         return _driver.PageSource;
     }
 
-    public void Dispose() => _driver.Quit();
+    public void Dispose()
+    {
+        if (_disposed)
+        { 
+            return; 
+        }
+
+        _driver.Quit();
+        _driver.Dispose();
+        _disposed = true;
+    }
 }
