@@ -13,7 +13,7 @@ internal sealed class InvoiceParser
 
         htmlDoc.LoadHtml(pageSource);
         var totalNode = htmlDoc.DocumentNode.SelectSingleNode("//p[contains(@class,'card-amount')]");
-        result.TotalSum = ParseDecimal(totalNode);
+        result.TotalSum = ParseDecimal(totalNode, isMoney: true);
         result.ShoppingDate = ParseDate(htmlDoc);
         result.ShopName = ParseShopName(htmlDoc);
         result.BoughtItems = ParseInvoiceItems(htmlDoc);  
@@ -55,9 +55,9 @@ internal sealed class InvoiceParser
                 var product = new Product
                 {
                     Name = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
-                    UnitPrice = ParseDecimal(unitPriceNode) ?? 0m,
-                    TotalPrice = ParseDecimal(totalPriceNode) ?? 0m,
-                    Quantity = ParseDecimal(quantityNode) ?? 0m
+                    UnitPrice = ParseDecimal(unitPriceNode, isMoney: true) ?? 0m,
+                    TotalPrice = ParseDecimal(totalPriceNode, isMoney: true) ?? 0m,
+                    Quantity = ParseDecimal(quantityNode, isMoney: false) ?? 0m
                 };
 
                 products.Add(product);
@@ -93,16 +93,25 @@ internal sealed class InvoiceParser
         return null;
     }
 
-    private static decimal? ParseDecimal(HtmlNode? node)
+    private static decimal? ParseDecimal(HtmlNode? node, bool isMoney)
     {
         if (node == null)
         {
             return null;
         }
 
-        var text = node.InnerText.Replace("EUR", string.Empty).Trim();
+        var culture = isMoney
+            ? CultureInfo.GetCultureInfo("sr-Latn-ME")
+            : CultureInfo.InvariantCulture;
 
-        if (decimal.TryParse(text, NumberStyles.Any, CultureInfo.GetCultureInfo("sr-Latn-ME"), out var value))
+        var text = node.InnerText;
+
+        if (isMoney)
+        {
+            text = text.Replace("EUR", string.Empty);
+        }
+
+        if (decimal.TryParse(text.Trim(), NumberStyles.Any, culture, out var value))
         {
             return value;
         }
