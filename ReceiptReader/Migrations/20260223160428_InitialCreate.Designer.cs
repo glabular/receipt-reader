@@ -12,8 +12,8 @@ using ReceiptReader.Data;
 namespace ReceiptReader.Migrations
 {
     [DbContext(typeof(InvoicesDbContext))]
-    [Migration("20260223131057_UpdateProductSchema")]
-    partial class UpdateProductSchema
+    [Migration("20260223160428_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -58,15 +58,15 @@ namespace ReceiptReader.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("InvoiceId")
+                    b.Property<int>("InvoiceId")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("decimal(18,2)");
@@ -78,14 +78,18 @@ namespace ReceiptReader.Migrations
 
                     b.HasIndex("InvoiceId");
 
-                    b.ToTable("Product");
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("ReceiptReader.Models.Product", b =>
                 {
-                    b.HasOne("ReceiptReader.Models.Invoice", null)
+                    b.HasOne("ReceiptReader.Models.Invoice", "Invoice")
                         .WithMany("BoughtItems")
-                        .HasForeignKey("InvoiceId");
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
                 });
 
             modelBuilder.Entity("ReceiptReader.Models.Invoice", b =>

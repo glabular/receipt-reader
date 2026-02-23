@@ -11,4 +11,8 @@ internal sealed class Product
     public required decimal TotalPrice { get; set; }
 
     public required decimal Quantity { get; set; }
+
+    public int InvoiceId { get; set; }
+
+    public Invoice? Invoice { get; set; }
 }

@@ -7,6 +7,8 @@ internal class InvoicesDbContext : DbContext
 {
     internal DbSet<Invoice> Invoices { get; set; }
 
+    internal DbSet<Product> Products { get; set; }
+
     public async Task AddInvoiceAsync(Invoice invoice)
     {
         Invoices.Add(invoice);
