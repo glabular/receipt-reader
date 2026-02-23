@@ -21,13 +21,13 @@ internal sealed class InvoiceParser
         return result;
     }
 
-    private static List<InvoiceItem>? ParseInvoiceItems(HtmlDocument htmlDoc)
+    private static List<Product>? ParseInvoiceItems(HtmlDocument htmlDoc)
     {
         var invoiceList = htmlDoc.DocumentNode.SelectSingleNode(
             "//ul[contains(@class,'invoice-items-list') and contains(@class,'list-unstyled')]"
         );
 
-        var invoiceItems = new List<InvoiceItem>();
+        var invoiceItems = new List<Product>();
 
         if (invoiceList != null)
         {
@@ -47,7 +47,7 @@ internal sealed class InvoiceParser
                     continue;
                 }
 
-                var invoiceItem = new InvoiceItem
+                var invoiceItem = new Product
                 {
                     Title = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
                     UnitPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim() ?? string.Empty,

@@ -1,6 +1,6 @@
 ﻿namespace ReceiptReader.Models;
 
-internal sealed class InvoiceItem
+internal sealed class Product
 {
     public int Id { get; set; }
 
