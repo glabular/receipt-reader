@@ -10,9 +10,9 @@ internal sealed class InvoiceParser
     {
         var result = new Invoice();
         var htmlDoc = new HtmlDocument();
-        var totalNode = htmlDoc.DocumentNode.SelectSingleNode("//p[contains(@class,'card-amount')]");
 
         htmlDoc.LoadHtml(pageSource);
+        var totalNode = htmlDoc.DocumentNode.SelectSingleNode("//p[contains(@class,'card-amount')]");
         result.TotalSum = ParseDecimal(totalNode);
         result.ShoppingDate = ParseDate(htmlDoc);
         result.ShopName = ParseShopName(htmlDoc);
