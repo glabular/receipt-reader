@@ -36,7 +36,7 @@ internal class Program
 
             foreach (var item in invoiceResult.BoughtItems)
             {
-                Console.WriteLine($"Title: {item.Title}, Unit Price: {item.UnitPrice}, Total Price: {item.InvoiceItemPrice}, Quantity: {item.Quantity}");
+                Console.WriteLine($"Title: {item.Name}, Unit Price: {item.UnitPrice}, Total Price: {item.TotalPrice}, Quantity: {item.Quantity}");
             }
 
             Console.WriteLine("-----\n\n");

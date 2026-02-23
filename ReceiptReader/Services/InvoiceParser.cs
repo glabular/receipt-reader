@@ -27,14 +27,14 @@ internal sealed class InvoiceParser
             "//ul[contains(@class,'invoice-items-list') and contains(@class,'list-unstyled')]"
         );
 
-        var invoiceItems = new List<Product>();
+        var products = new List<Product>();
 
         if (invoiceList != null)
         {
             var items = invoiceList.SelectNodes("./li[contains(@class,'invoice-item')]");
             if (items == null)
             {
-                return invoiceItems;
+                return products;
             }
 
             foreach (var item in items)
@@ -47,20 +47,40 @@ internal sealed class InvoiceParser
                     continue;
                 }
 
-                var invoiceItem = new Product
+                var unitPriceRaw = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim() ?? string.Empty;
+
+                if (!decimal.TryParse(unitPriceRaw, out var unitPrice))
                 {
-                    Title = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
-                    UnitPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim() ?? string.Empty,
-                    InvoiceItemPrice = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]")?.InnerText.Trim() ?? string.Empty,
-                    Quantity = details.SelectSingleNode(".//span[contains(@class,'invoice-item--quantity')]")?.InnerText.Trim() ?? string.Empty
+                    unitPrice = 0m;
+                }
+
+                var totalPriceRaw = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]")?.InnerText.Trim() ?? string.Empty;
+
+                if (!decimal.TryParse(totalPriceRaw, out var totalPrice))
+                {
+                    totalPrice = 0m;
+                }
+
+                var quantityRaw = details.SelectSingleNode(".//span[contains(@class,'invoice-item--quantity')]")?.InnerText.Trim() ?? string.Empty;
+
+                if (!int.TryParse(quantityRaw, out var quantity))
+                {
+                    quantity = 0;
+                }
+
+                var product = new Product
+                {
+                    Name = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
+                    UnitPrice = unitPrice,
+                    TotalPrice = totalPrice,
+                    Quantity = quantity
                 };
 
-                invoiceItems.Add(invoiceItem);
+                products.Add(product);
             }
-
         }
 
-        return invoiceItems;
+        return products;
     }
 
     private static string? ParseShopName(HtmlDocument htmlDoc)
