@@ -6,7 +6,7 @@ namespace ReceiptReader.Services;
 
 internal sealed class InvoiceParser
 {
-    public static Invoice? ParseInvoicePage(string pageSource)
+    public static Invoice? ParseInvoicePage(string pageUrl, string pageSource)
     {
         var result = new Invoice();
         var htmlDoc = new HtmlDocument();
@@ -16,7 +16,7 @@ internal sealed class InvoiceParser
         result.ShoppingDate = ParseDate(htmlDoc);
         result.ShopName = ParseShopName(htmlDoc);
         result.BoughtItems = ParseInvoiceItems(htmlDoc);  
-        result.URL = pageSource;
+        result.URL = pageUrl;
 
         return result;
     }

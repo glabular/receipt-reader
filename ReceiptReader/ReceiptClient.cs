@@ -16,7 +16,7 @@ internal sealed class ReceiptClient : IDisposable
     {
         var pageSource = _browser.GetPageSource(url);
 
-        return InvoiceParser.ParseInvoicePage(pageSource);
+        return InvoiceParser.ParseInvoicePage(url, pageSource);
     }
 
     public void Dispose() => throw new NotImplementedException();

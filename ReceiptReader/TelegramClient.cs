@@ -11,6 +11,7 @@ internal sealed class TelegramClient
     private readonly TelegramBotClient _bot;
     private readonly HashSet<string> _processedGroups = [];
     private readonly InvoicesDbContext _invoicesDbContext = new();
+    private readonly ReceiptClient _receiptClient = new();
 
     public TelegramClient()
     {
@@ -82,7 +83,7 @@ internal sealed class TelegramClient
 
     private async Task HandleUrlAsync(Message msg)
     {
-        var invoice = InvoiceParser.ParseInvoicePage(msg.Text!);
+        var invoice = _receiptClient.GetInvoice(msg.Text!);
 
         if (invoice != null)
         {
