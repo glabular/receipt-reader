@@ -1,5 +1,6 @@
 ﻿using ReceiptReader.Data;
 using ReceiptReader.Services;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -85,18 +86,52 @@ internal sealed class TelegramClient
     {
         var invoice = _receiptClient.GetInvoice(msg.Text!);
 
-        if (invoice != null)
+        if (invoice == null)
         {
-            try
-            {
-                await _invoicesDbContext.AddInvoiceAsync(invoice);
-                Console.WriteLine("Invoice saved to database.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to save invoice: {ex.Message}");
-            }
+            await _bot.SendMessage(msg.Chat.Id, "❌ Could not process invoice.");
+            Console.WriteLine("Invoice was null.");
+            return;
         }
+
+        try
+        {
+            await _invoicesDbContext.AddInvoiceAsync(invoice);
+            Console.WriteLine("Invoice saved to database.");
+
+            var sb = new StringBuilder();
+            sb.AppendLine("✅ **Invoice Added!**");
+            sb.AppendLine("---");
+            sb.AppendLine($"🛒 **Shop:** {invoice.ShopName ?? "Unknown"}");
+            sb.AppendLine($"📅 **Date:** {invoice.ShoppingDate?.ToString("dd.MM.yyyy HH:mm") ?? "N/A"}");
+            sb.AppendLine();
+
+            if (invoice.BoughtItems != null && invoice.BoughtItems.Any())
+            {
+                sb.AppendLine("📦 **Items:**");
+                foreach (var item in invoice.BoughtItems)
+                {
+                    var qty = item.Quantity.ToString("G29") ?? "0";
+                    var unit = item.UnitPrice.ToString("N2") ?? "0.00";
+                    var total = item.TotalPrice.ToString("N2") ?? "0.00";
+
+                    sb.AppendLine($"- **{item.Name}** | {qty}x{unit} = **{total}**");
+                }
+            }
+
+            sb.AppendLine("---");
+            sb.AppendLine($"💰 **Total Sum:** {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
+
+            await _bot.SendMessage(
+                chatId: msg.Chat.Id,
+                text: sb.ToString(),
+                parseMode: ParseMode.Markdown // Enables the bold/bullet formatting
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to save invoice: {ex.Message}");
+            await _bot.SendMessage(msg.Chat.Id, "⚠️ There was an error saving your invoice to the database.");
+        }        
     }
 
     private async Task HandleSinglePhotoAsync(Message msg)
