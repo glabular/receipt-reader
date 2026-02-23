@@ -100,7 +100,7 @@ internal sealed class TelegramClient
 
             var sb = new StringBuilder();
             sb.AppendLine("✅ <b>Invoice Added!</b>");
-            sb.AppendLine("______________________________"); // Markdown --- doesn't work in HTML
+            sb.AppendLine(new string('_', 35));
             sb.AppendLine($"🛒 <b>Shop:</b> {invoice.ShopName ?? "Unknown"}");
             sb.AppendLine($"📅 <b>Date:</b> {invoice.ShoppingDate?.ToString("dd.MM.yyyy HH:mm") ?? "N/A"}");
             sb.AppendLine();
@@ -113,13 +113,13 @@ internal sealed class TelegramClient
                     var qty = item.Quantity.ToString("G29") ?? "0";
                     var unit = item.UnitPrice.ToString("N2") ?? "0.00";
                     var total = item.TotalPrice.ToString("N2") ?? "0.00";
+                    var prettyName = char.ToUpper(item.Name[0]) + item.Name[1..].ToLower();
 
-                    // Format: - Name | QtyxUnit = Total
-                    sb.AppendLine($"- {item.Name} | {qty}x{unit} = <b>{total}</b>");
+                    sb.AppendLine($"- {prettyName} | {qty}x{unit} = <b>{total}</b>");
                 }
             }
 
-            sb.AppendLine("______________________________");
+            sb.AppendLine(new string('_', 35));
             sb.AppendLine($"💰 <b>Total Sum:</b> {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
 
             await _bot.SendMessage(
