@@ -10,9 +10,10 @@ internal sealed class InvoiceParser
     {
         var result = new Invoice();
         var htmlDoc = new HtmlDocument();
+        var totalNode = htmlDoc.DocumentNode.SelectSingleNode("//p[contains(@class,'card-amount')]");
 
         htmlDoc.LoadHtml(pageSource);
-        result.TotalSum = ParseTotal(htmlDoc);
+        result.TotalSum = ParseDecimal(totalNode);
         result.ShoppingDate = ParseDate(htmlDoc);
         result.ShopName = ParseShopName(htmlDoc);
         result.BoughtItems = ParseInvoiceItems(htmlDoc);  
@@ -47,33 +48,16 @@ internal sealed class InvoiceParser
                     continue;
                 }
 
-                var unitPriceRaw = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]")?.InnerText.Trim() ?? string.Empty;
-
-                if (!decimal.TryParse(unitPriceRaw, out var unitPrice))
-                {
-                    unitPrice = 0m;
-                }
-
-                var totalPriceRaw = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]")?.InnerText.Trim() ?? string.Empty;
-
-                if (!decimal.TryParse(totalPriceRaw, out var totalPrice))
-                {
-                    totalPrice = 0m;
-                }
-
-                var quantityRaw = details.SelectSingleNode(".//span[contains(@class,'invoice-item--quantity')]")?.InnerText.Trim() ?? string.Empty;
-
-                if (!int.TryParse(quantityRaw, out var quantity))
-                {
-                    quantity = 0;
-                }
+                var unitPriceNode = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--unit-price')]");
+                var totalPriceNode = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--price')]");
+                var quantityNode = details.SelectSingleNode(".//span[contains(@class,'invoice-item--quantity')]");
 
                 var product = new Product
                 {
                     Name = heading.SelectSingleNode(".//span[contains(@class,'invoice-item--title')]")?.InnerText.Trim() ?? string.Empty,
-                    UnitPrice = unitPrice,
-                    TotalPrice = totalPrice,
-                    Quantity = quantity
+                    UnitPrice = ParseDecimal(unitPriceNode) ?? 0m,
+                    TotalPrice = ParseDecimal(totalPriceNode) ?? 0m,
+                    Quantity = ParseDecimal(quantityNode) ?? 0m
                 };
 
                 products.Add(product);
@@ -109,26 +93,18 @@ internal sealed class InvoiceParser
         return null;
     }
 
-    private static decimal? ParseTotal(HtmlDocument htmlDoc)
+    private static decimal? ParseDecimal(HtmlNode? node)
     {
-        var totalNode = htmlDoc.DocumentNode.SelectSingleNode("//p[contains(@class,'card-amount')]");
-
-        if (totalNode == null)
+        if (node == null)
         {
             return null;
         }
 
-        var totalText = totalNode.InnerText
-            .Replace("EUR", string.Empty)
-            .Trim();
+        var text = node.InnerText.Replace("EUR", string.Empty).Trim();
 
-        if (decimal.TryParse(
-            totalText,
-            NumberStyles.Any,
-            CultureInfo.GetCultureInfo("sr-Latn-ME"),
-            out var totalAmount))
+        if (decimal.TryParse(text, NumberStyles.Any, CultureInfo.GetCultureInfo("sr-Latn-ME"), out var value))
         {
-            return totalAmount;
+            return value;
         }
 
         return null;

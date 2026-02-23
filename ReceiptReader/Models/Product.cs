@@ -10,5 +10,5 @@ internal sealed class Product
 
     public required decimal TotalPrice { get; set; }
 
-    public required int Quantity { get; set; }
+    public required decimal Quantity { get; set; }
 }
