@@ -172,13 +172,19 @@ internal sealed class TelegramClient
 
             var qrText = _qrReader.ReadQr(tempPath);
 
-            if (!string.IsNullOrWhiteSpace(qrText))
+            if (string.IsNullOrWhiteSpace(qrText))
             {
-                Console.WriteLine($"QR Code content: {qrText}");
+                await _bot.SendMessage(msg.Chat.Id, "🔍 No QR code detected. Please make sure the photo is clear.");
+            }
+            else if (!UrlValidator.IsUrlValid(qrText))
+            {
+                await _bot.SendMessage(msg.Chat.Id, "⚠️ This QR code is not a valid Montenegro tax receipt.");
+                Console.WriteLine($"User scanned wrong QR: {qrText}");
             }
             else
             {
-                await _bot.SendMessage(msg.Chat.Id, "🔍 No QR code found in that image.");
+                // Success.
+                Console.WriteLine($"Processing valid receipt: {qrText}");
             }
         }
         catch (Exception ex)
