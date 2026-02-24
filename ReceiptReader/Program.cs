@@ -19,7 +19,7 @@ internal class Program
             return;
         }
 
-        var telegramClient = new TelegramClient(telegramToken);
+        await using var telegramClient = new TelegramClient(telegramToken);
 
         await telegramClient.StartAsync();
 

@@ -2,7 +2,6 @@
 using ReceiptReader.Data;
 using ReceiptReader.Models;
 using ReceiptReader.Services;
-using System.Formats.Tar;
 using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -10,7 +9,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace ReceiptReader;
 
-internal sealed class TelegramClient
+internal sealed class TelegramClient : IAsyncDisposable
 {
     private readonly TelegramBotClient _bot;
     private readonly HashSet<string> _processedGroups = [];
@@ -260,5 +259,12 @@ internal sealed class TelegramClient
                 File.Delete(tempPath);
             }
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _qrReader.Dispose();
+        _receiptClient.Dispose();
+        await _invoicesDbContext.DisposeAsync();
     }
 }
