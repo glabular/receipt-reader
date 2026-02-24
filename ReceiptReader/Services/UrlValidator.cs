@@ -10,6 +10,6 @@ internal sealed class UrlValidator
     {
         return !string.IsNullOrEmpty(url) &&
                Uri.IsWellFormedUriString(url, UriKind.Absolute) &&
-               url.StartsWith(VerificationUrlTemplate);
+               url.StartsWith(VerificationUrlTemplate, StringComparison.OrdinalIgnoreCase);
     }
 }
