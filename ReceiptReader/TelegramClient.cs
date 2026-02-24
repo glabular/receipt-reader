@@ -16,6 +16,7 @@ internal sealed class TelegramClient
     private readonly HashSet<string> _processedGroups = [];
     private readonly InvoicesDbContext _invoicesDbContext = new();
     private readonly ReceiptClient _receiptClient = new();
+    private readonly WeChatQrReader _qrReader = new();
 
     public TelegramClient(string token)
     {
@@ -134,20 +135,10 @@ internal sealed class TelegramClient
 
     private async Task HandleSinglePhotoAsync(Message msg)
     {
-        var _qrReader = new WeChatQrReader();
-        var largestPhoto = msg.Photo.Last();
-        using var photoStream = await DownloadPhotoToMemoryAsync(largestPhoto.FileId);
-        var tempFileName = $"{Guid.NewGuid()}.jpg";
-        var tempPath = Path.Combine(Path.GetTempPath(), tempFileName);
-
         try
         {
-            using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
-            {
-                await photoStream.CopyToAsync(fileStream);
-            }
-
-            var qrText = _qrReader.ReadQr(tempPath);
+            var largestPhoto = msg.Photo.Last();
+            var qrText = await ExtractQrTextAsync(largestPhoto);
 
             if (string.IsNullOrWhiteSpace(qrText))
             {
@@ -167,13 +158,6 @@ internal sealed class TelegramClient
         catch (Exception ex)
         {
             Console.WriteLine($"Error processing image: {ex.Message}");
-        }
-        finally
-        {
-            if (File.Exists(tempPath))
-            {
-                File.Delete(tempPath);
-            }
         }
     }
 
@@ -252,5 +236,29 @@ internal sealed class TelegramClient
         sb.AppendLine($"💰 <b>Total Sum:</b> {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
 
         return sb.ToString();
+    }
+
+    private async Task<string?> ExtractQrTextAsync(PhotoSize photo)
+    {
+        using var photoStream = await DownloadPhotoToMemoryAsync(photo.FileId);
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.jpg");
+
+        try
+        {
+            using (var fileStream = new FileStream(tempPath, FileMode.Create))
+            {
+                await photoStream.CopyToAsync(fileStream);
+            }
+
+            return _qrReader.ReadQr(tempPath);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 }
