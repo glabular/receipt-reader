@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ReceiptReader.Data;
+using ReceiptReader.Models;
 using ReceiptReader.Services;
 using System.Formats.Tar;
 using System.Text;
@@ -116,35 +117,11 @@ internal sealed class TelegramClient
                 return;
             }
 
-            Console.WriteLine("Invoice saved to database.");
-
-            var sb = new StringBuilder();
-            sb.AppendLine("✅ <b>Invoice Added!</b>");
-            sb.AppendLine(new string('_', 35));
-            sb.AppendLine($"🛒 <b>Shop:</b> {invoice.ShopName ?? "Unknown"}");
-            sb.AppendLine($"📅 <b>Date:</b> {invoice.ShoppingDate?.ToString("dd.MM.yyyy HH:mm") ?? "N/A"}");
-            sb.AppendLine();
-
-            if (invoice.BoughtItems != null && invoice.BoughtItems.Any())
-            {
-                sb.AppendLine("📦 <b>Items:</b>");
-                foreach (var item in invoice.BoughtItems)
-                {
-                    var qty = item.Quantity.ToString("G29") ?? "0";
-                    var unit = item.UnitPrice.ToString("N2") ?? "0.00";
-                    var total = item.TotalPrice.ToString("N2") ?? "0.00";
-                    var prettyName = char.ToUpper(item.Name[0]) + item.Name[1..].ToLower();
-
-                    sb.AppendLine($"- {prettyName} | {qty}x{unit} = <b>{total}</b>");
-                }
-            }
-
-            sb.AppendLine(new string('_', 35));
-            sb.AppendLine($"💰 <b>Total Sum:</b> {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
+            Console.WriteLine("Invoice saved to database.");            
 
             await _bot.SendMessage(
                 chatId: msg.Chat.Id,
-                text: sb.ToString(),
+                text: BuildInvoiceMessage(invoice),
                 parseMode: ParseMode.Html // Enables the bold/bullet formatting
             );
         }
@@ -246,5 +223,34 @@ internal sealed class TelegramClient
         }
 
         return Enums.MessageType.Other;
+    }
+
+    private static string BuildInvoiceMessage(Invoice invoice)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("✅ <b>Invoice Added!</b>");
+        sb.AppendLine(new string('_', 35));
+        sb.AppendLine($"🛒 <b>Shop:</b> {invoice.ShopName ?? "Unknown"}");
+        sb.AppendLine($"📅 <b>Date:</b> {invoice.ShoppingDate?.ToString("dd.MM.yyyy HH:mm") ?? "N/A"}");
+        sb.AppendLine();
+
+        if (invoice.BoughtItems != null && invoice.BoughtItems.Count != 0)
+        {
+            sb.AppendLine("📦 <b>Items:</b>");
+            foreach (var item in invoice.BoughtItems)
+            {
+                var qty = item.Quantity.ToString("G29") ?? "0";
+                var unit = item.UnitPrice.ToString("N2") ?? "0.00";
+                var total = item.TotalPrice.ToString("N2") ?? "0.00";
+                var prettyName = char.ToUpper(item.Name[0]) + item.Name[1..].ToLower();
+
+                sb.AppendLine($"- {prettyName} | {qty}x{unit} = <b>{total}</b>");
+            }
+        }
+
+        sb.AppendLine(new string('_', 35));
+        sb.AppendLine($"💰 <b>Total Sum:</b> {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
+
+        return sb.ToString();
     }
 }
