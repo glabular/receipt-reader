@@ -28,6 +28,7 @@ internal class WeChatQrReader : IDisposable
 
         _detector.DetectAndDecode(mat, out Mat[] points, out string[] results);
 
+        // TODO: Return all detected QR codes instead of just the first one.
         return results.Length > 0 ? results[0] : null;
     }
 

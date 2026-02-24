@@ -1,10 +1,11 @@
-﻿using ReceiptReader.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using ReceiptReader.Data;
 using ReceiptReader.Services;
+using System.Formats.Tar;
 using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Microsoft.EntityFrameworkCore;
 
 namespace ReceiptReader;
 
@@ -156,10 +157,41 @@ internal sealed class TelegramClient
 
     private async Task HandleSinglePhotoAsync(Message msg)
     {
+        var _qrReader = new WeChatQrReader();
         var largestPhoto = msg.Photo.Last();
         using var photoStream = await DownloadPhotoToMemoryAsync(largestPhoto.FileId);
-        var qrText = QrCodeReader.ReadQrCode(photoStream);
-        Console.WriteLine($"QR Code content: {qrText}");
+        var tempFileName = $"{Guid.NewGuid()}.jpg";
+        var tempPath = Path.Combine(Path.GetTempPath(), tempFileName);
+
+        try
+        {
+            using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+            {
+                await photoStream.CopyToAsync(fileStream);
+            }
+
+            var qrText = _qrReader.ReadQr(tempPath);
+
+            if (!string.IsNullOrWhiteSpace(qrText))
+            {
+                Console.WriteLine($"QR Code content: {qrText}");
+            }
+            else
+            {
+                await _bot.SendMessage(msg.Chat.Id, "🔍 No QR code found in that image.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing image: {ex.Message}");
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 
     private async Task HandleStartCommandAsync(Message msg)
@@ -171,7 +203,9 @@ internal sealed class TelegramClient
     {
         var file = await _bot.GetFile(fileId);
         if (file.FilePath == null)
+        {
             throw new InvalidOperationException("File path is null");
+        }
 
         var memoryStream = new MemoryStream();
         await _bot.DownloadFile(file.FilePath, memoryStream);
