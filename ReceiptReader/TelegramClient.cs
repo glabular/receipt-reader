@@ -52,7 +52,7 @@ internal sealed class TelegramClient : IAsyncDisposable
                 return;
             case Enums.MessageType.ValidUrl:
                 Console.WriteLine("Received a valid URL");
-                await HandleUrlAsync(msg);
+                await HandleValidUrlAsync(msg);
                 return;
             case Enums.MessageType.Photo:
                 Console.WriteLine("Received a photo");
@@ -85,51 +85,16 @@ internal sealed class TelegramClient : IAsyncDisposable
         }
     }
 
-    private async Task HandleUrlAsync(Message msg)
+    private async Task HandleValidUrlAsync(Message msg)
     {
-        var url = msg.Text!;
-        var exists = await _invoicesDbContext.Invoices.AnyAsync(i => i.URL == url);
+        var url = msg.Text?.Trim();
 
-        if (exists)
+        if (string.IsNullOrWhiteSpace(url))
         {
-            await _bot.SendMessage(msg.Chat.Id, "⚠️ This receipt already exists.");
-
             return;
         }
 
-        var invoice = _receiptClient.GetInvoice(url);
-
-        if (invoice == null)
-        {
-            await _bot.SendMessage(msg.Chat.Id, "❌ Could not process invoice.");
-            Console.WriteLine("Invoice was null.");
-            return;
-        }
-
-        try
-        {
-            var saved = await _invoicesDbContext.AddInvoiceAsync(invoice);
-
-            if (!saved)
-            {
-                // TODO: Logging
-                await _bot.SendMessage(msg.Chat.Id, "⚠️ This receipt already exists.");
-                return;
-            }
-
-            Console.WriteLine("Invoice saved to database.");            
-
-            await _bot.SendMessage(
-                chatId: msg.Chat.Id,
-                text: BuildInvoiceMessage(invoice),
-                parseMode: ParseMode.Html // Enables the bold/bullet formatting
-            );
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
-            await _bot.SendMessage(msg.Chat.Id, "⚠️ Unexpected error occurred.");
-        }        
+        await ProcessInvoiceUrlAsync(msg.Chat.Id, url);
     }
 
     private async Task HandleSinglePhotoAsync(Message msg)
@@ -152,6 +117,8 @@ internal sealed class TelegramClient : IAsyncDisposable
             {
                 // Success.
                 Console.WriteLine($"Processing valid receipt: {qrText}");
+
+                await ProcessInvoiceUrlAsync(msg.Chat.Id, qrText);
             }
         }
         catch (Exception ex)
@@ -168,6 +135,7 @@ internal sealed class TelegramClient : IAsyncDisposable
     private async Task<MemoryStream> DownloadPhotoToMemoryAsync(string fileId)
     {
         var file = await _bot.GetFile(fileId);
+
         if (file.FilePath == null)
         {
             throw new InvalidOperationException("File path is null");
@@ -176,6 +144,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         var memoryStream = new MemoryStream();
         await _bot.DownloadFile(file.FilePath, memoryStream);
         memoryStream.Position = 0; // reset stream for reading
+
         return memoryStream;
     }
 
@@ -258,6 +227,53 @@ internal sealed class TelegramClient : IAsyncDisposable
             {
                 File.Delete(tempPath);
             }
+        }
+    }
+
+    private async Task ProcessInvoiceUrlAsync(long chatId, string url)
+    {
+        var exists = await _invoicesDbContext.Invoices.AnyAsync(i => i.URL == url);
+
+        if (exists)
+        {
+            await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");
+
+            return;
+        }
+
+        var invoice = _receiptClient.GetInvoice(url);
+
+        if (invoice == null)
+        {
+            await _bot.SendMessage(chatId, "❌ Could not process invoice.");
+            Console.WriteLine($"Invoice was null for URL: {url}");
+
+            return;
+        }
+
+        try
+        {
+            var saved = await _invoicesDbContext.AddInvoiceAsync(invoice);
+
+            if (!saved)
+            {
+                await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");
+
+                return;
+            }
+
+            Console.WriteLine("Invoice saved to database.");
+
+            await _bot.SendMessage(
+                chatId: chatId,
+                text: BuildInvoiceMessage(invoice),
+                parseMode: ParseMode.Html
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Unexpected error: {ex.Message}");
+            await _bot.SendMessage(chatId, "⚠️ Unexpected error occurred.");
         }
     }
 
