@@ -95,7 +95,15 @@ internal sealed class TelegramClient
 
         try
         {
-            await _invoicesDbContext.AddInvoiceAsync(invoice);
+            var saved = await _invoicesDbContext.AddInvoiceAsync(invoice);
+
+            if (!saved)
+            {
+                // TODO: Logging
+                await _bot.SendMessage(msg.Chat.Id, "⚠️ This receipt already exists.");
+                return;
+            }
+
             Console.WriteLine("Invoice saved to database.");
 
             var sb = new StringBuilder();
@@ -130,8 +138,8 @@ internal sealed class TelegramClient
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to save invoice: {ex.Message}");
-            await _bot.SendMessage(msg.Chat.Id, "⚠️ There was an error saving your invoice to the database.");
+            Console.WriteLine($"Unexpected error: {ex.Message}");
+            await _bot.SendMessage(msg.Chat.Id, "⚠️ Unexpected error occurred.");
         }        
     }
 

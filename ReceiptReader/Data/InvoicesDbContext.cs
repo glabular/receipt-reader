@@ -9,14 +9,30 @@ internal class InvoicesDbContext : DbContext
 
     internal DbSet<Product> Products { get; set; }
 
-    public async Task AddInvoiceAsync(Invoice invoice)
+    public async Task<bool> AddInvoiceAsync(Invoice invoice)
     {
-        Invoices.Add(invoice);
-        await SaveChangesAsync();
+        try
+        {
+            Invoices.Add(invoice);
+            await SaveChangesAsync();
+
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            return false;
+        }
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseSqlServer("Server=localhost;Database=InvoicesDb;Trusted_Connection=True;TrustServerCertificate=True");
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Invoice>()
+            .HasIndex(i => i.URL)
+            .IsUnique();
     }
 }

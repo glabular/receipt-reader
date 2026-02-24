@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ReceiptReader.Data;
 
@@ -11,9 +12,11 @@ using ReceiptReader.Data;
 namespace ReceiptReader.Migrations
 {
     [DbContext(typeof(InvoicesDbContext))]
-    partial class InvoicesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260224111830_AddInvoiceUrlUnique")]
+    partial class AddInvoiceUrlUnique
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

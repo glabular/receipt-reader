@@ -8,16 +8,19 @@ internal sealed class InvoiceParser
 {
     public static Invoice? ParseInvoicePage(string pageUrl, string pageSource)
     {
-        var result = new Invoice();
         var htmlDoc = new HtmlDocument();
 
         htmlDoc.LoadHtml(pageSource);
         var totalNode = htmlDoc.DocumentNode.SelectSingleNode("//p[contains(@class,'card-amount')]");
-        result.TotalSum = ParseDecimal(totalNode, isMoney: true);
-        result.ShoppingDate = ParseDate(htmlDoc);
-        result.ShopName = ParseShopName(htmlDoc);
-        result.BoughtItems = ParseInvoiceItems(htmlDoc);  
-        result.URL = pageUrl;
+
+        var result = new Invoice
+        {
+            TotalSum = ParseDecimal(totalNode, isMoney: true),
+            ShoppingDate = ParseDate(htmlDoc),
+            ShopName = ParseShopName(htmlDoc),
+            BoughtItems = ParseInvoiceItems(htmlDoc),
+            URL = pageUrl
+        };
 
         return result;
     }

@@ -12,5 +12,5 @@ internal sealed class Invoice
 
     public decimal? TotalSum { get; set; }
 
-    public string? URL { get; set; }
+    public required string URL { get; set; }
 }
