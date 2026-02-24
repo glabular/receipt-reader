@@ -8,7 +8,7 @@ internal sealed class Invoice
 
     public DateTime? ShoppingDate { get; set; }
 
-    public List<Product>? BoughtItems { get; set; }
+    public List<Product> BoughtItems { get; set; } = [];
 
     public decimal? TotalSum { get; set; }
 
