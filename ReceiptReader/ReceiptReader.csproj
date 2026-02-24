@@ -21,6 +21,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
+    <PackageReference Include="OpenCvSharp4.Extensions" Version="4.13.0.20260222" />
+    <PackageReference Include="OpenCvSharp4.Windows" Version="4.13.0.20260222" />
     <PackageReference Include="Selenium.WebDriver" Version="4.40.0" />
     <PackageReference Include="Telegram.Bot" Version="22.9.0" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
