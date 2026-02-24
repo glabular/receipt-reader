@@ -12,7 +12,7 @@ internal class InvoicesDbContext : DbContext
     public async Task AddInvoiceAsync(Invoice invoice)
     {
         Invoices.Add(invoice);
-        SaveChanges();
+        await SaveChangesAsync();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
