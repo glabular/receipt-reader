@@ -4,6 +4,7 @@ using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace ReceiptReader;
 
@@ -84,7 +85,17 @@ internal sealed class TelegramClient
 
     private async Task HandleUrlAsync(Message msg)
     {
-        var invoice = _receiptClient.GetInvoice(msg.Text!);
+        var url = msg.Text!;
+        var exists = await _invoicesDbContext.Invoices.AnyAsync(i => i.URL == url);
+
+        if (exists)
+        {
+            await _bot.SendMessage(msg.Chat.Id, "⚠️ This receipt already exists.");
+
+            return;
+        }
+
+        var invoice = _receiptClient.GetInvoice(url);
 
         if (invoice == null)
         {
