@@ -14,9 +14,9 @@ internal sealed class TelegramClient
     private readonly InvoicesDbContext _invoicesDbContext = new();
     private readonly ReceiptClient _receiptClient = new();
 
-    public TelegramClient()
+    public TelegramClient(string token)
     {
-        _bot = new TelegramBotClient("");
+        _bot = new TelegramBotClient(token);
     }
 
     public async Task StartAsync()
