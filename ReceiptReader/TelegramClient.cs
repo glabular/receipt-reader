@@ -47,7 +47,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         switch (typeOfMessage)
         {
             case Enums.MessageType.Command:
-                await HandleCommandAsync(msg);
+                await CommandsHandler.HandleAsync(_bot, msg);
                 return;
 
             case Enums.MessageType.Photo:
@@ -127,41 +127,6 @@ internal sealed class TelegramClient : IAsyncDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"Error processing image: {ex.Message}");
-        }
-    }
-
-    private async Task HandleCommandAsync(Message msg)
-    {
-        var command = msg.Text.Trim().Split(' ')[0].ToLower();
-
-        switch (command)
-        {
-            case "/start":
-                Console.WriteLine("Received command: /start");
-                await _bot.SendMessage(msg.Chat.Id,
-                    "Send a receipt photo with a visible QR code to get items and total price.");
-                break;
-
-            case "/help":
-                Console.WriteLine("Received command: /help");
-                await _bot.SendMessage(msg.Chat.Id,
-                    "Send a receipt photo with a visible QR code to get items and total price.");
-                break;
-
-            case "/spent_month":
-                Console.WriteLine("Received command: /spent_month");
-                await _bot.SendMessage(msg.Chat.Id, $"Your total spending this month is: X...");
-                break;
-
-            case "/spent_year":
-                Console.WriteLine("Received command: /spent_year");
-                await _bot.SendMessage(msg.Chat.Id, $"Your total spending this year is: X...");
-                break;
-
-            default:
-                Console.WriteLine($"Received unknown command: {command}");
-                await _bot.SendMessage(msg.Chat.Id, "Unknown command.");
-                break;
         }
     }
 
