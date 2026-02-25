@@ -36,5 +36,9 @@ internal class InvoicesDbContext : DbContext
         modelBuilder.Entity<Invoice>()
             .HasIndex(i => i.URL)
             .IsUnique();
+
+        modelBuilder.Entity<TelegramUser>()
+            .HasIndex(u => u.TelegramUserId)
+            .IsUnique();
     }
 }
