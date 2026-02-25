@@ -15,4 +15,6 @@ internal sealed class Invoice
     public required string URL { get; set; }
 
     public TelegramUser? TelegramUser { get; set; }
+
+    public int TelegramUserId { get; set; }
 }
