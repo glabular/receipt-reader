@@ -2,7 +2,7 @@
 
 public enum MessageType
 {
-    StartCommand,
+    Command,
     ValidUrl,
     Photo,
     Album,
