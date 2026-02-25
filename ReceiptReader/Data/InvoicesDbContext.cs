@@ -40,5 +40,15 @@ internal class InvoicesDbContext : DbContext
         modelBuilder.Entity<TelegramUser>()
             .HasIndex(u => u.TelegramUserId)
             .IsUnique();
+
+        modelBuilder.Entity<Invoice>()
+            .HasOne(i => i.TelegramUser)
+            .WithMany(u => u.Invoices)
+            .HasForeignKey(i => i.TelegramUserId);
+
+        modelBuilder.Entity<Product>()
+            .HasOne(p => p.Invoice)
+            .WithMany(i => i.BoughtItems)
+            .HasForeignKey(p => p.InvoiceId);
     }
 }
