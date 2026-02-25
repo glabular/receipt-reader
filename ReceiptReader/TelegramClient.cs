@@ -50,10 +50,10 @@ internal sealed class TelegramClient : IAsyncDisposable
                 Console.WriteLine("Received /start command");
                 await HandleStartCommandAsync(msg);
                 return;
-            case Enums.MessageType.ValidUrl:
-                Console.WriteLine("Received a valid URL");
-                await HandleValidUrlAsync(msg);
-                return;
+            //case Enums.MessageType.ValidUrl:
+            //    Console.WriteLine("Received a valid URL");
+            //    await HandleValidUrlAsync(msg);
+            //    return;
             case Enums.MessageType.Photo:
                 Console.WriteLine("Received a photo");
                 await HandleSinglePhotoAsync(msg);
@@ -81,6 +81,9 @@ internal sealed class TelegramClient : IAsyncDisposable
                 return;
             case Enums.MessageType.Other:
                 default:
+                Console.WriteLine("Received unsupported message");
+                await _bot.SendMessage(msg.Chat.Id, "Please send a receipt photo with a visible QR code.");
+
                 return;
         }
     }
@@ -166,12 +169,12 @@ internal sealed class TelegramClient : IAsyncDisposable
             {
                 return Enums.MessageType.StartCommand;
             }
-            else if (UrlValidator.IsUrlValid(text))
-            {
-                return Enums.MessageType.ValidUrl;
-            }
+            //else if (UrlValidator.IsUrlValid(text))
+            //{
+            //    return Enums.MessageType.ValidUrl;
+            //}
 
-            return Enums.MessageType.Text;
+            //return Enums.MessageType.Text;
         }
 
         return Enums.MessageType.Other;
