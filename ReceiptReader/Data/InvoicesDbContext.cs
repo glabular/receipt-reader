@@ -9,6 +9,8 @@ internal class InvoicesDbContext : DbContext
 
     internal DbSet<Product> Products { get; set; }
 
+    internal DbSet<TelegramUser> TelegramUsers { get; set; }
+
     public async Task<bool> AddInvoiceAsync(Invoice invoice)
     {
         try
