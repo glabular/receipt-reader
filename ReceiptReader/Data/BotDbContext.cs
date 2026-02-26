@@ -3,7 +3,7 @@ using ReceiptReader.Models;
 
 namespace ReceiptReader.Data;
 
-internal class InvoicesDbContext : DbContext
+internal class BotDbContext : DbContext
 {
     internal DbSet<Invoice> Invoices { get; set; }
 

@@ -11,7 +11,7 @@ using ReceiptReader.Data;
 
 namespace ReceiptReader.Migrations
 {
-    [DbContext(typeof(InvoicesDbContext))]
+    [DbContext(typeof(BotDbContext))]
     [Migration("20260225215240_AddTelegramUser")]
     partial class AddTelegramUser
     {

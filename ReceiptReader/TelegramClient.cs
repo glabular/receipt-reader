@@ -13,7 +13,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 {
     private readonly TelegramBotClient _bot;
     private readonly HashSet<string> _processedGroups = [];
-    private readonly InvoicesDbContext _invoicesDbContext = new();
+    private readonly BotDbContext _invoicesDbContext = new();
     private readonly ReceiptClient _receiptClient = new();
     private readonly WeChatQrReader _qrReader = new();
 

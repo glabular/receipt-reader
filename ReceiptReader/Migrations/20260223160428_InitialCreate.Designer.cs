@@ -11,7 +11,7 @@ using ReceiptReader.Data;
 
 namespace ReceiptReader.Migrations
 {
-    [DbContext(typeof(InvoicesDbContext))]
+    [DbContext(typeof(BotDbContext))]
     [Migration("20260223160428_InitialCreate")]
     partial class InitialCreate
     {

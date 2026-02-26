@@ -11,7 +11,7 @@ using ReceiptReader.Data;
 
 namespace ReceiptReader.Migrations
 {
-    [DbContext(typeof(InvoicesDbContext))]
+    [DbContext(typeof(BotDbContext))]
     [Migration("20260224115949_MakeBoughtItemsNonNullable")]
     partial class MakeBoughtItemsNonNullable
     {

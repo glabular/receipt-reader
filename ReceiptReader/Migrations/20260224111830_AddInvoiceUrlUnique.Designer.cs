@@ -11,7 +11,7 @@ using ReceiptReader.Data;
 
 namespace ReceiptReader.Migrations
 {
-    [DbContext(typeof(InvoicesDbContext))]
+    [DbContext(typeof(BotDbContext))]
     [Migration("20260224111830_AddInvoiceUrlUnique")]
     partial class AddInvoiceUrlUnique
     {

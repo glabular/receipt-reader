@@ -10,7 +10,7 @@ using ReceiptReader.Data;
 
 namespace ReceiptReader.Migrations
 {
-    [DbContext(typeof(InvoicesDbContext))]
+    [DbContext(typeof(BotDbContext))]
     partial class InvoicesDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
