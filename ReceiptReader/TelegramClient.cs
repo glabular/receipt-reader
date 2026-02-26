@@ -13,13 +13,14 @@ internal sealed class TelegramClient : IAsyncDisposable
 {
     private readonly TelegramBotClient _bot;
     private readonly HashSet<string> _processedGroups = [];
-    private readonly BotDbContext _invoicesDbContext = new();
+    private readonly InvoiceService _invoiceService;
     private readonly ReceiptClient _receiptClient = new();
     private readonly WeChatQrReader _qrReader = new();
 
-    public TelegramClient(string token)
+    public TelegramClient(string token, InvoiceService invoiceService)
     {
         _bot = new TelegramBotClient(token);
+        _invoiceService = invoiceService;
     }
 
     public async Task StartAsync()
@@ -219,15 +220,6 @@ internal sealed class TelegramClient : IAsyncDisposable
 
     private async Task ProcessInvoiceUrlAsync(long chatId, string url)
     {
-        var exists = await _invoicesDbContext.Invoices.AnyAsync(i => i.URL == url);
-
-        if (exists)
-        {
-            await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");
-
-            return;
-        }
-
         var invoice = _receiptClient.GetInvoice(url);
 
         if (invoice == null)
@@ -240,14 +232,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         try
         {
-            var saved = await _invoicesDbContext.AddInvoiceAsync(invoice);
-
-            if (!saved)
-            {
-                await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");
-
-                return;
-            }
+            await _invoiceService.AddInvoiceAsync(invoice);
 
             Console.WriteLine("Invoice saved to database.");
 
@@ -256,6 +241,12 @@ internal sealed class TelegramClient : IAsyncDisposable
                 text: BuildInvoiceMessage(invoice),
                 parseMode: ParseMode.Html
             );
+        }
+        catch (DbUpdateException)
+        {
+            await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");
+
+            return;
         }
         catch (Exception ex)
         {
@@ -268,6 +259,5 @@ internal sealed class TelegramClient : IAsyncDisposable
     {
         _qrReader.Dispose();
         _receiptClient.Dispose();
-        await _invoicesDbContext.DisposeAsync();
     }
 }
