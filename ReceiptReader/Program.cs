@@ -45,7 +45,8 @@ internal class Program
                 telegramToken,
                 sp.GetRequiredService<InvoiceService>(),
                 sp.GetRequiredService<ReceiptClient>(),
-                sp.GetRequiredService<WeChatQrReader>()
+                sp.GetRequiredService<WeChatQrReader>(),
+                sp.GetRequiredService<UserService>()
         ));
 
         await using var serviceProvider = services.BuildServiceProvider();
