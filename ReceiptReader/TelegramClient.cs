@@ -51,6 +51,13 @@ internal sealed class TelegramClient : IAsyncDisposable
     {
         Console.WriteLine($"Received {type} in {msg.Chat}");
 
+        if (msg.From is null)
+        {
+            return;
+        }
+
+        await _userService.EnsureUserExistsAsync(msg.From);
+
         var typeOfMessage = GetMessageType(msg);
 
         switch (typeOfMessage)
