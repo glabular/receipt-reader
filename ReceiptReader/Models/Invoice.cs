@@ -4,6 +4,8 @@ internal sealed class Invoice
 {
     public int Id { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
     public string? ShopName { get; set; }
 
     public DateTime? ShoppingDate { get; set; }
