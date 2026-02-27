@@ -252,7 +252,7 @@ internal sealed class TelegramClient : IAsyncDisposable
             return;
         }
 
-        // TODO: Add 'created at' field
+        invoice.CreatedAt = DateTime.UtcNow;
         invoice.TelegramUser = telegramUser;
 
         try
