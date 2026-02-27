@@ -25,7 +25,7 @@ internal sealed class InvoiceParser
         return result;
     }
 
-    private static List<Product>? ParseInvoiceItems(HtmlDocument htmlDoc)
+    private static List<Product> ParseInvoiceItems(HtmlDocument htmlDoc)
     {
         var invoiceList = htmlDoc.DocumentNode.SelectSingleNode(
             "//ul[contains(@class,'invoice-items-list') and contains(@class,'list-unstyled')]"

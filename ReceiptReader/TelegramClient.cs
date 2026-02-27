@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OpenCvSharp;
 using ReceiptReader.Models;
 using ReceiptReader.Services;
 using System.Text;
@@ -67,48 +68,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         var typeOfMessage = GetMessageType(msg);
 
-        switch (typeOfMessage)
-        {
-            case Enums.MessageType.Command:
-                await CommandsHandler.HandleAsync(_bot, msg);
-                return;
-
-            case Enums.MessageType.Photo:
-                Console.WriteLine("Received a photo");
-                await HandleSinglePhotoAsync(msg, dbUser);
-                return;
-
-            // TODO: Come up with better way to handle albums without the hashset.
-            case Enums.MessageType.Album:
-                // Skip if already processed
-                if (msg.MediaGroupId != null)
-                {
-                    if (!_processedGroups.Add(msg.MediaGroupId))
-                    {
-                        return; // Already processed this album
-                    }
-                }
-
-                Console.WriteLine("Received photo album");
-
-                // Take only one photo from the album and pass to single photo handler
-                await HandleSinglePhotoAsync(msg, dbUser);   
-
-                return;
-
-            case Enums.MessageType.Text:
-                Console.WriteLine("Received some text");
-                Console.WriteLine($"TODO: Remove the echo functionality. Echo: {msg.Text}");
-
-                return;
-
-            case Enums.MessageType.Other:
-                default:
-                Console.WriteLine("Received unsupported message");
-                await _bot.SendMessage(msg.Chat.Id, "Please send a receipt photo with a visible QR code.");
-
-                return;
-        }
+        await HandleMessage(typeOfMessage, msg, dbUser);
     }
 
     private async Task HandleValidUrlAsync(Message msg, TelegramUser user)
@@ -125,6 +85,16 @@ internal sealed class TelegramClient : IAsyncDisposable
 
     private async Task HandleSinglePhotoAsync(Message msg, TelegramUser user)
     {
+        if (msg.Photo is null)
+        {
+            Console.WriteLine("Photo was null");
+            await _bot.SendMessage(
+                msg.Chat.Id, 
+                "I couldn't detect a valid photo. Please resend the receipt image with the QR code clearly visible.");
+
+            return;
+        }
+
         try
         {
             var largestPhoto = msg.Photo.Last();
@@ -251,6 +221,8 @@ internal sealed class TelegramClient : IAsyncDisposable
             return;
         }
 
+        await _bot.SendMessage(chatId, "📄 Your receipt is being processed. This may take a few moments.");
+
         var invoice = _receiptClient.GetInvoice(url);
 
         if (invoice is null)
@@ -280,6 +252,29 @@ internal sealed class TelegramClient : IAsyncDisposable
         {
             Console.WriteLine($"Unexpected error: {ex.Message}");
             await _bot.SendMessage(chatId, "⚠️ Unexpected error occurred.");
+        }
+    }
+
+    private async Task HandleMessage(Enums.MessageType type, Message msg, TelegramUser user)
+    {
+        switch (type)
+        {
+            case Enums.MessageType.Command:
+                await CommandsHandler.HandleAsync(_bot, msg);
+                break;
+
+            case Enums.MessageType.Photo:
+                await HandleSinglePhotoAsync(msg, user);
+                break;
+
+            case Enums.MessageType.Text:
+                Console.WriteLine($"Received some text: {msg.Text}");
+                break;
+
+            default:
+                Console.WriteLine("Received unsupported message");
+                await _bot.SendMessage(msg.Chat.Id, "Please send a receipt photo with a visible QR code.");
+                break;
         }
     }
 
