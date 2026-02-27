@@ -56,7 +56,14 @@ internal sealed class TelegramClient : IAsyncDisposable
             return;
         }
 
-        await _userService.EnsureUserExistsAsync(msg.From);
+        var dbUser = await _userService.EnsureUserExistsAsync(msg.From);
+
+        if (dbUser is null)
+        {
+            Console.WriteLine("Error: Could not create or fetch the user from the database.");
+
+            return;
+        }
 
         var typeOfMessage = GetMessageType(msg);
 
@@ -68,7 +75,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
             case Enums.MessageType.Photo:
                 Console.WriteLine("Received a photo");
-                await HandleSinglePhotoAsync(msg);
+                await HandleSinglePhotoAsync(msg, dbUser);
                 return;
 
             // TODO: Come up with better way to handle albums without the hashset.
@@ -85,7 +92,7 @@ internal sealed class TelegramClient : IAsyncDisposable
                 Console.WriteLine("Received photo album");
 
                 // Take only one photo from the album and pass to single photo handler
-                await HandleSinglePhotoAsync(msg);   
+                await HandleSinglePhotoAsync(msg, dbUser);   
 
                 return;
 
@@ -104,7 +111,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         }
     }
 
-    private async Task HandleValidUrlAsync(Message msg)
+    private async Task HandleValidUrlAsync(Message msg, TelegramUser user)
     {
         var url = msg.Text?.Trim();
 
@@ -113,10 +120,10 @@ internal sealed class TelegramClient : IAsyncDisposable
             return;
         }
 
-        await ProcessInvoiceUrlAsync(msg.Chat.Id, url);
+        await ProcessInvoiceUrlAsync(msg.Chat.Id, url, user);
     }
 
-    private async Task HandleSinglePhotoAsync(Message msg)
+    private async Task HandleSinglePhotoAsync(Message msg, TelegramUser user)
     {
         try
         {
@@ -137,7 +144,7 @@ internal sealed class TelegramClient : IAsyncDisposable
                 // Success.
                 Console.WriteLine($"Processing valid receipt: {qrText}");
 
-                await ProcessInvoiceUrlAsync(msg.Chat.Id, qrText);
+                await ProcessInvoiceUrlAsync(msg.Chat.Id, qrText, user);
             }
         }
         catch (Exception ex)
@@ -233,17 +240,20 @@ internal sealed class TelegramClient : IAsyncDisposable
         }
     }
 
-    private async Task ProcessInvoiceUrlAsync(long chatId, string url)
+    private async Task ProcessInvoiceUrlAsync(long chatId, string url, TelegramUser telegramUser)
     {
         var invoice = _receiptClient.GetInvoice(url);
 
-        if (invoice == null)
+        if (invoice is null)
         {
             await _bot.SendMessage(chatId, "❌ Could not process invoice.");
             Console.WriteLine($"Invoice was null for URL: {url}");
 
             return;
         }
+
+        // TODO: Add 'created at' field
+        invoice.TelegramUser = telegramUser;
 
         try
         {
@@ -257,6 +267,7 @@ internal sealed class TelegramClient : IAsyncDisposable
                 parseMode: ParseMode.Html
             );
         }
+        // TODO: Remove. Check URL exsistence earlier in the method.
         catch (DbUpdateException)
         {
             await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");

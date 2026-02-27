@@ -5,6 +5,7 @@ namespace ReceiptReader.Services;
 
 internal class CommandsHandler
 {
+    // TODO: Add user to the signature for future logging.
     public static async Task HandleAsync(TelegramBotClient bot, Message msg)
     {
         var command = msg.Text?.Trim().Split(' ')[0].ToLower();

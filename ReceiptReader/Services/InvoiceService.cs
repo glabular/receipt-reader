@@ -14,6 +14,7 @@ internal class InvoiceService
 
     public async Task AddInvoiceAsync(Invoice invoice)
     {
+        // TODO: Decide whether Add or AddAsync to use here.
         await _dbContext.Invoices.AddAsync(invoice);
         await _dbContext.SaveChangesAsync();
     }
