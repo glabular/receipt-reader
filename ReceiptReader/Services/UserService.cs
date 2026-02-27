@@ -16,12 +16,12 @@ internal class UserService
 
     public async Task<TelegramUser?> EnsureUserExistsAsync(User tgUser)
     {
-        var existingUser = await _dbContext.TelegramUsers
+        var user = await _dbContext.TelegramUsers
             .FirstOrDefaultAsync(u => u.TelegramUserId == tgUser.Id);
 
-        if (existingUser is null)
+        if (user is null)
         {
-            var newUser = new TelegramUser
+            user = new TelegramUser
             {
                 TelegramUserId = tgUser.Id,
                 Username = tgUser.Username,
@@ -29,17 +29,17 @@ internal class UserService
                 LastName = tgUser.LastName
             };
 
-            _dbContext.TelegramUsers.Add(newUser);
+            _dbContext.TelegramUsers.Add(user);            
         }
         else
         {
-            existingUser.Username = tgUser.Username;
-            existingUser.FirstName = tgUser.FirstName;
-            existingUser.LastName = tgUser.LastName;
+            user.Username = tgUser.Username;
+            user.FirstName = tgUser.FirstName;
+            user.LastName = tgUser.LastName;            
         }
 
         await _dbContext.SaveChangesAsync();
 
-        return existingUser;
+        return user;
     }
 }
