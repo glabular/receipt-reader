@@ -14,13 +14,19 @@ internal sealed class TelegramClient : IAsyncDisposable
     private readonly TelegramBotClient _bot;
     private readonly HashSet<string> _processedGroups = [];
     private readonly InvoiceService _invoiceService;
-    private readonly ReceiptClient _receiptClient = new();
-    private readonly WeChatQrReader _qrReader = new();
+    private readonly ReceiptClient _receiptClient;
+    private readonly WeChatQrReader _qrReader;
 
-    public TelegramClient(string token, InvoiceService invoiceService)
+    public TelegramClient(
+        string token, 
+        InvoiceService invoiceService,
+        ReceiptClient receiptClient,
+        WeChatQrReader qrReader)
     {
         _bot = new TelegramBotClient(token);
         _invoiceService = invoiceService;
+        _qrReader = qrReader;
+        _receiptClient = receiptClient;
     }
 
     public async Task StartAsync()
