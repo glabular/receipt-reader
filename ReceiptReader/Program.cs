@@ -37,6 +37,7 @@ internal class Program
             options.UseSqlServer(connectionString));
 
         services.AddScoped<InvoiceService>();
+        services.AddScoped<UserService>();
         services.AddScoped<ReceiptClient>();
         services.AddScoped<WeChatQrReader>();
         services.AddScoped<TelegramClient>(sp =>
