@@ -14,7 +14,7 @@ internal class UserService
         _dbContext = dbContext;
     }
 
-    public async Task EnsureUserExistsAsync(User tgUser)
+    public async Task<TelegramUser?> EnsureUserExistsAsync(User tgUser)
     {
         var existingUser = await _dbContext.TelegramUsers
             .FirstOrDefaultAsync(u => u.TelegramUserId == tgUser.Id);
@@ -39,5 +39,7 @@ internal class UserService
         }
 
         await _dbContext.SaveChangesAsync();
+
+        return existingUser;
     }
 }
