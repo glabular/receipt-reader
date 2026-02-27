@@ -53,7 +53,7 @@ namespace ReceiptReader.Migrations
                     b.HasIndex("URL")
                         .IsUnique();
 
-                    b.ToTable("Invoices");
+                    b.ToTable("Invoices", (string)null);
                 });
 
             modelBuilder.Entity("ReceiptReader.Models.Product", b =>
@@ -84,7 +84,7 @@ namespace ReceiptReader.Migrations
 
                     b.HasIndex("InvoiceId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("ReceiptReader.Models.TelegramUser", b =>
@@ -103,7 +103,7 @@ namespace ReceiptReader.Migrations
                     b.HasIndex("TelegramUserId")
                         .IsUnique();
 
-                    b.ToTable("TelegramUsers");
+                    b.ToTable("TelegramUsers", (string)null);
                 });
 
             modelBuilder.Entity("ReceiptReader.Models.Invoice", b =>
