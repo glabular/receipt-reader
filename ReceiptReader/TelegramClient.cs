@@ -242,7 +242,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
     private async Task ProcessInvoiceUrlAsync(long chatId, string url, TelegramUser telegramUser)
     {
-        var exists = _invoiceService.IsInvoiceExist(url);
+        var exists = _invoiceService.InvoiceExists(url);
 
         if (exists)
         {

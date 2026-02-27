@@ -19,7 +19,7 @@ internal class InvoiceService
         await _dbContext.SaveChangesAsync();
     }
 
-    public bool IsInvoiceExist(string url)
+    public bool InvoiceExists(string url)
     {
         return _dbContext.Invoices.Any(i => i.URL == url);
     }
