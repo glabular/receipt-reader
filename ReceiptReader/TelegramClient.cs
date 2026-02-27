@@ -242,6 +242,15 @@ internal sealed class TelegramClient : IAsyncDisposable
 
     private async Task ProcessInvoiceUrlAsync(long chatId, string url, TelegramUser telegramUser)
     {
+        var exists = _invoiceService.IsInvoiceExist(url);
+
+        if (exists)
+        {
+            await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");
+
+            return;
+        }
+
         var invoice = _receiptClient.GetInvoice(url);
 
         if (invoice is null)
@@ -266,14 +275,7 @@ internal sealed class TelegramClient : IAsyncDisposable
                 text: BuildInvoiceMessage(invoice),
                 parseMode: ParseMode.Html
             );
-        }
-        // TODO: Remove. Check URL exsistence earlier in the method.
-        catch (DbUpdateException)
-        {
-            await _bot.SendMessage(chatId, "⚠️ This receipt already exists.");
-
-            return;
-        }
+        }        
         catch (Exception ex)
         {
             Console.WriteLine($"Unexpected error: {ex.Message}");
