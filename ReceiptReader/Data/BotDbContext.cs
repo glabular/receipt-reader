@@ -5,16 +5,13 @@ namespace ReceiptReader.Data;
 
 internal class BotDbContext : DbContext
 {
+    public BotDbContext(DbContextOptions<BotDbContext> options) : base(options) { }
+
     internal DbSet<Invoice> Invoices { get; set; }
 
     internal DbSet<Product> Products { get; set; }
 
     internal DbSet<TelegramUser> TelegramUsers { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlServer("Server=localhost;Database=InvoicesDb;Trusted_Connection=True;TrustServerCertificate=True");
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

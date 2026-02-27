@@ -15,6 +15,8 @@ internal class Program
             .Build();
 
         var telegramToken = config["TelegramBotToken"];
+        var connectionString = config.GetConnectionString("DefaultConnection");
+
         if (string.IsNullOrEmpty(telegramToken))
         {
             Console.WriteLine("ERROR: 'TelegramBotToken' is missing from secrets.json.");
@@ -22,11 +24,17 @@ internal class Program
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Console.WriteLine("ERROR: The DB connection string is missing from secrets.json.");
+
+            return;
+        }
+
         var services = new ServiceCollection();
 
         services.AddDbContext<BotDbContext>(options =>
-            options.UseSqlServer(
-                "Server=localhost;Database=InvoicesDb;Trusted_Connection=True;TrustServerCertificate=True"));
+            options.UseSqlServer(connectionString));
 
         services.AddScoped<InvoiceService>();
         services.AddScoped<ReceiptClient>();
