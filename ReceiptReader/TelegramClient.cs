@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ReceiptReader.Data;
 using ReceiptReader.Models;
 using ReceiptReader.Services;
 using System.Text;
@@ -50,7 +49,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
     private async Task OnMessage(Message msg, UpdateType type)
     {
-        Console.WriteLine($"Received {type} in {msg.Chat}");        
+        Console.WriteLine($"Received {type} in {msg.Chat}");
 
         var typeOfMessage = GetMessageType(msg);
 
