@@ -263,7 +263,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         switch (type)
         {
             case Enums.MessageType.Command:
-                await CommandsHandler.HandleAsync(_bot, msg);
+                await _commandsHandler.HandleAsync(_bot, msg);
                 break;
 
             case Enums.MessageType.Photo:

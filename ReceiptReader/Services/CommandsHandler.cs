@@ -13,7 +13,7 @@ internal class CommandsHandler
     }
 
     // TODO: Add user to the signature for future logging.
-    public static async Task HandleAsync(TelegramBotClient bot, Message msg)
+    public async Task HandleAsync(TelegramBotClient bot, Message msg)
     {
         var command = msg.Text?.Trim().Split(' ')[0].ToLower();
 
