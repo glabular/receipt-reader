@@ -23,4 +23,14 @@ internal class InvoiceService
     {
         return _dbContext.Invoices.Any(i => i.URL == url);
     }
+
+    public decimal GetMonthlyTotalAsync(long telegramUserId, int month, int year)
+    {
+        throw new NotImplementedException();
+    }
+
+    public decimal GetYearlyTotalAsync(long telegramUserId, int year)
+    {
+        throw new NotImplementedException();
+    }
 }
