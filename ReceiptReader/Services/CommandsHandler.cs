@@ -5,6 +5,13 @@ namespace ReceiptReader.Services;
 
 internal class CommandsHandler
 {
+    private readonly InvoiceService _invoiceService;
+
+    public CommandsHandler(InvoiceService invoiceService)
+    {
+        _invoiceService = invoiceService;
+    }
+
     // TODO: Add user to the signature for future logging.
     public static async Task HandleAsync(TelegramBotClient bot, Message msg)
     {
