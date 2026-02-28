@@ -40,13 +40,16 @@ internal class Program
         services.AddScoped<UserService>();
         services.AddScoped<ReceiptClient>();
         services.AddScoped<WeChatQrReader>();
+        services.AddScoped<CommandsHandler>();
         services.AddScoped<TelegramClient>(sp =>
             new TelegramClient(
                 telegramToken,
                 sp.GetRequiredService<InvoiceService>(),
                 sp.GetRequiredService<ReceiptClient>(),
                 sp.GetRequiredService<WeChatQrReader>(),
-                sp.GetRequiredService<UserService>()
+                sp.GetRequiredService<UserService>(),
+                sp.GetRequiredService<CommandsHandler>()
+
         ));
 
         await using var serviceProvider = services.BuildServiceProvider();

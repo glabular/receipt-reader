@@ -17,18 +17,21 @@ internal sealed class TelegramClient : IAsyncDisposable
     private readonly ReceiptClient _receiptClient;
     private readonly WeChatQrReader _qrReader;
     private readonly UserService _userService;
+    private readonly CommandsHandler _commandsHandler;
 
     public TelegramClient(
         string token, 
         InvoiceService invoiceService,
         ReceiptClient receiptClient,
         WeChatQrReader qrReader,
-        UserService userService)
+        UserService userService,
+        CommandsHandler commandsHandler)
     {
         _bot = new TelegramBotClient(token);
         _invoiceService = invoiceService;
         _qrReader = qrReader;
         _userService = userService;
+        _commandsHandler = commandsHandler;
         _receiptClient = receiptClient;
     }
 
