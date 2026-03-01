@@ -12,7 +12,7 @@ internal sealed class Invoice
 
     public List<Product> BoughtItems { get; set; } = [];
 
-    public decimal? TotalSum { get; set; }
+    public decimal TotalSum { get; set; }
 
     public required string URL { get; set; }
 

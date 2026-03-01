@@ -13,9 +13,18 @@ internal sealed class InvoiceParser
         htmlDoc.LoadHtml(pageSource);
         var totalNode = htmlDoc.DocumentNode.SelectSingleNode("//p[contains(@class,'card-amount')]");
 
+        var total = ParseDecimal(totalNode, isMoney: true);
+
+        if (total is null)
+        {
+            Console.WriteLine("Parsing failed: invoice invalid");
+            
+            return null;
+        }
+
         var result = new Invoice
         {
-            TotalSum = ParseDecimal(totalNode, isMoney: true),
+            TotalSum = total.Value,
             ShoppingDate = ParseDate(htmlDoc),
             ShopName = ParseShopName(htmlDoc),
             BoughtItems = ParseInvoiceItems(htmlDoc),

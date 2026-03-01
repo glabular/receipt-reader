@@ -184,7 +184,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         }
 
         sb.AppendLine(new string('_', 35));
-        sb.AppendLine($"💰 <b>Total Sum:</b> {invoice.TotalSum?.ToString("N2") ?? "0.00"} EUR");
+        sb.AppendLine($"💰 <b>Total Sum:</b> {invoice.TotalSum.ToString("N2") ?? "0.00"} EUR");
 
         return sb.ToString();
     }
