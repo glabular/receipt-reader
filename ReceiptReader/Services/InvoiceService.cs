@@ -1,4 +1,5 @@
-﻿using ReceiptReader.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using ReceiptReader.Data;
 using ReceiptReader.Models;
 
 namespace ReceiptReader.Services;
@@ -29,8 +30,33 @@ internal class InvoiceService
         throw new NotImplementedException();
     }
 
-    public decimal GetYearlyTotalAsync(long telegramUserId, int year)
+    public async Task<decimal?> GetYearlyTotal(long telegramUserId, int year)
     {
-        throw new NotImplementedException();
+        var userId = await _dbContext.TelegramUsers
+            .Where(u => u.TelegramUserId == telegramUserId)
+            .Select(u => u.Id)
+            .FirstOrDefaultAsync();
+
+        // User not found
+        if (userId == 0)
+        {
+            return null;
+        }
+
+        var invoicesQuery = _dbContext.Invoices
+            .Where(i =>
+                i.UserId == userId &&
+                i.ShoppingDate.HasValue &&
+                i.ShoppingDate.Value.Year == year);
+
+        var hasInvoices = await invoicesQuery.AnyAsync();
+
+        // No data for this year
+        if (!hasInvoices)
+        {
+            return null;
+        }
+
+        return await invoicesQuery.SumAsync(i => i.TotalSum);
     }
 }
