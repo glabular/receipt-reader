@@ -18,5 +18,5 @@ internal sealed class Invoice
 
     public TelegramUser? TelegramUser { get; set; }
 
-    public int TelegramUserId { get; set; }
+    public int UserId { get; set; }
 }

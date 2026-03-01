@@ -26,7 +26,7 @@ internal class BotDbContext : DbContext
         modelBuilder.Entity<Invoice>()
             .HasOne(i => i.TelegramUser)
             .WithMany(u => u.Invoices)
-            .HasForeignKey(i => i.TelegramUserId);
+            .HasForeignKey(i => i.UserId);
 
         modelBuilder.Entity<Product>()
             .HasOne(p => p.Invoice)
