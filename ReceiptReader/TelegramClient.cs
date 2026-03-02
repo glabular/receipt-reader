@@ -181,7 +181,7 @@ internal sealed class TelegramClient : IAsyncDisposable
             {
                 var qty = item.Quantity.ToString("G29") ?? "0";
                 var unit = item.UnitPrice.ToString("N2") ?? "0.00";
-                var total = item.TotalPrice.ToString("N2") ?? "0.00";
+                var total = item.TotalPrice.ToString("N4") ?? "0.00";
                 var prettyName = char.ToUpper(item.Name[0]) + item.Name[1..].ToLower();
 
                 sb.AppendLine($"- {prettyName} | {qty}x{unit} = <b>{total}</b>");
