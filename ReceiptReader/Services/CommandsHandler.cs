@@ -67,16 +67,25 @@ internal class CommandsHandler
         );
     }
 
-    private static async Task HandleSpentMonthAsync(TelegramBotClient bot, Message msg)
+    private async Task HandleSpentMonthAsync(TelegramBotClient bot, Message msg)
     {
         await bot.SendMessage(
             msg.Chat.Id,
             "Calculating your total spending for this month..."
         );
 
+        var totalSpent = await _invoiceService.GetMonthlyTotalAsync(msg.From.Id, DateTime.UtcNow.Month, DateTime.UtcNow.Year);
 
-        await bot.SendMessage(msg.Chat.Id,
-                    "Your total spending this month is: X...");
+        if (totalSpent is null)
+        {
+            await bot.SendMessage(msg.Chat.Id,
+                "No receipts found for this month.");
+        }
+        else
+        {
+            await bot.SendMessage(msg.Chat.Id,
+                $"Your total spending this month is: {totalSpent.Value:F2}");
+        }
     }
 
     private async Task HandleSpentYearAsync(TelegramBotClient bot, Message msg)

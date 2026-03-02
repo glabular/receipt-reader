@@ -25,38 +25,38 @@ internal class InvoiceService
         return _dbContext.Invoices.Any(i => i.URL == url);
     }
 
-    public decimal GetMonthlyTotalAsync(long telegramUserId, int month, int year)
+    public async Task<decimal?> GetMonthlyTotalAsync(long telegramUserId, int month, int year)
     {
-        throw new NotImplementedException();
+        return await GetUserInvoicesByDate(telegramUserId, year, month)
+            .Select(i => (decimal?)i.TotalSum)
+            .SumAsync();
     }
 
     public async Task<decimal?> GetYearlyTotal(long telegramUserId, int year)
     {
-        var userId = await _dbContext.TelegramUsers
+        return await GetUserInvoicesByDate(telegramUserId, year)
+            .Select(i => (decimal?)i.TotalSum)
+            .SumAsync();
+    }
+
+    private IQueryable<Invoice> GetUserInvoicesByDate(long telegramUserId, int year, int? month = null)
+    {
+        var userIdQuery = _dbContext.TelegramUsers
             .Where(u => u.TelegramUserId == telegramUserId)
-            .Select(u => u.Id)
-            .FirstOrDefaultAsync();
+            .Select(u => u.Id);
 
-        // User not found
-        if (userId == 0)
+        var query = _dbContext.Invoices
+            .Where(i => userIdQuery.Contains(i.UserId) &&
+                        i.ShoppingDate.HasValue &&
+                        i.ShoppingDate.Value.Year == year);
+
+        if (month.HasValue)
         {
-            return null;
+            query = query.Where(
+                i => i.ShoppingDate.HasValue &&
+                i.ShoppingDate.Value.Month == month.Value);
         }
 
-        var invoicesQuery = _dbContext.Invoices
-            .Where(i =>
-                i.UserId == userId &&
-                i.ShoppingDate.HasValue &&
-                i.ShoppingDate.Value.Year == year);
-
-        var hasInvoices = await invoicesQuery.AnyAsync();
-
-        // No data for this year
-        if (!hasInvoices)
-        {
-            return null;
-        }
-
-        return await invoicesQuery.SumAsync(i => i.TotalSum);
+        return query;
     }
 }
