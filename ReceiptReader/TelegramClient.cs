@@ -20,6 +20,7 @@ internal sealed class TelegramClient : IAsyncDisposable
     private readonly UserService _userService;
     private readonly CommandsHandler _commandsHandler;
     private readonly ILogger<TelegramClient> _logger;
+    private readonly string _logsDirectory = Path.Combine("D:\\Program Files", "ReceiptReader", "Logs");
 
     public TelegramClient(
         string token, 
@@ -105,7 +106,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         try
         {
             var largestPhoto = msg.Photo.Last();
-            var qrText = await ExtractQrTextAsync(largestPhoto);
+            var qrText = await ExtractQrTextAsync(largestPhoto, user);
 
             if (string.IsNullOrWhiteSpace(qrText))
             {
@@ -193,27 +194,40 @@ internal sealed class TelegramClient : IAsyncDisposable
         return sb.ToString();
     }
 
-    private async Task<string?> ExtractQrTextAsync(PhotoSize photo)
+    private async Task<string?> ExtractQrTextAsync(PhotoSize photo, TelegramUser user)
+    {
+        var filePath = await SavePhotoToLogsAsync(photo, user);
+
+        if (filePath is null)
+        {
+            return null;
+        }
+
+        return _qrReader.ReadQr(filePath);
+    }
+
+    private async Task<string?> SavePhotoToLogsAsync(PhotoSize photo, TelegramUser user)
     {
         using var photoStream = await DownloadPhotoToMemoryAsync(photo.FileId);
+        var fileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid()}.jpg";
+        var monthFolder = DateTime.UtcNow.ToString("MM");
+        var userFolder = Path.Combine(_logsDirectory, user.TelegramUserId.ToString(), monthFolder);
+        var filePath = Path.Combine(userFolder, fileName);
 
-        var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.jpg");
+        Directory.CreateDirectory(userFolder);
 
         try
         {
-            using (var fileStream = new FileStream(tempPath, FileMode.Create))
+            await using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 await photoStream.CopyToAsync(fileStream);
             }
 
-            return _qrReader.ReadQr(tempPath);
+            return filePath;
         }
-        finally
+        catch (Exception)
         {
-            if (File.Exists(tempPath))
-            {
-                File.Delete(tempPath);
-            }
+            throw;
         }
     }
 
