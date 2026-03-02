@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using ReceiptReader.Models;
 using ReceiptReader.Services;
@@ -18,6 +19,7 @@ internal sealed class TelegramClient : IAsyncDisposable
     private readonly WeChatQrReader _qrReader;
     private readonly UserService _userService;
     private readonly CommandsHandler _commandsHandler;
+    private readonly ILogger<TelegramClient> _logger;
 
     public TelegramClient(
         string token, 
@@ -25,13 +27,15 @@ internal sealed class TelegramClient : IAsyncDisposable
         ReceiptClient receiptClient,
         WeChatQrReader qrReader,
         UserService userService,
-        CommandsHandler commandsHandler)
+        CommandsHandler commandsHandler,
+        ILogger<TelegramClient> logger)
     {
         _bot = new TelegramBotClient(token);
         _invoiceService = invoiceService;
         _qrReader = qrReader;
         _userService = userService;
         _commandsHandler = commandsHandler;
+        _logger = logger;
         _receiptClient = receiptClient;
     }
 
@@ -40,11 +44,11 @@ internal sealed class TelegramClient : IAsyncDisposable
         try
         {
             var me = await _bot.GetMe();
-            Console.WriteLine($"{me.Username}: authentication successful.");
+            _logger.LogInformation("Bot authenticated successfully as {Username}", me.Username);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to authenticate bot: {ex.Message}");
+            _logger.LogCritical($"Failed to authenticate bot: {ex.Message}");
             throw;
         }
 
@@ -53,7 +57,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
     private async Task OnMessage(Message msg, UpdateType type)
     {
-        Console.WriteLine($"Received {type} in {msg.Chat}");
+        _logger.LogInformation("Received {MessageType} in {ChatId}", type, msg.Chat);
 
         if (msg.From is null)
         {
@@ -64,7 +68,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         if (dbUser is null)
         {
-            Console.WriteLine("Error: Could not create or fetch the user from the database.");
+            _logger.LogError("Failed to create or fetch user with Telegram ID {TelegramUserId}", msg.From.Id);
 
             return;
         }
@@ -90,7 +94,7 @@ internal sealed class TelegramClient : IAsyncDisposable
     {
         if (msg.Photo is null)
         {
-            Console.WriteLine("Photo was null");
+            _logger.LogWarning("Received a photo message without photo content from user {TelegramUserId}", user.TelegramUserId);
             await _bot.SendMessage(
                 msg.Chat.Id, 
                 "I couldn't detect a valid photo. Please resend the receipt image with the QR code clearly visible.");
@@ -110,19 +114,19 @@ internal sealed class TelegramClient : IAsyncDisposable
             else if (!UrlValidator.IsUrlValid(qrText))
             {
                 await _bot.SendMessage(msg.Chat.Id, "⚠️ This QR code is not a valid Montenegro tax receipt.");
-                Console.WriteLine($"User scanned wrong QR: {qrText}");
+                _logger.LogWarning("User {TelegramUserId} scanned an invalid QR code: {QrText}", user.TelegramUserId, qrText);
             }
             else
             {
                 // Success.
-                Console.WriteLine($"Processing valid receipt: {qrText}");
+                _logger.LogInformation("User {TelegramUserId} scanned a valid QR code: {QrText}", user.TelegramUserId, qrText);
 
                 await ProcessInvoiceUrlAsync(msg.Chat.Id, qrText, user);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error processing image: {ex.Message}");
+            _logger.LogError(ex, "Error processing photo message from user {TelegramUserId}", user.TelegramUserId);
         }
     }
 
@@ -231,7 +235,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         if (invoice is null)
         {
             await _bot.SendMessage(chatId, "❌ Could not process invoice.");
-            Console.WriteLine($"Invoice was null for URL: {url}");
+            _logger.LogWarning("Invoice was null for URL: {Url}", url);
 
             return;
         }
@@ -243,7 +247,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         {
             await _invoiceService.AddInvoiceAsync(invoice);
 
-            Console.WriteLine("Invoice saved to database.");
+            _logger.LogInformation("Invoice added successfully for user {TelegramUserId} with URL: {Url}", telegramUser.TelegramUserId, url);
 
             await _bot.SendMessage(
                 chatId: chatId,
@@ -253,7 +257,8 @@ internal sealed class TelegramClient : IAsyncDisposable
         }        
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            _logger.LogError(ex, "Error adding invoice for user {TelegramUserId} with URL: {Url}", telegramUser.TelegramUserId, url);
+            
             await _bot.SendMessage(chatId, "⚠️ Unexpected error occurred.");
         }
     }
@@ -271,11 +276,11 @@ internal sealed class TelegramClient : IAsyncDisposable
                 break;
 
             case Enums.MessageType.Text:
-                Console.WriteLine($"Received some text: {msg.Text}");
+                _logger.LogInformation("Received text message from user {TelegramUserId}: {Text}", user.TelegramUserId, msg.Text);
                 break;
 
             default:
-                Console.WriteLine("Received unsupported message");
+                _logger.LogWarning("Received unsupported message type {MessageType} from user {TelegramUserId}", type, user.TelegramUserId);
                 await _bot.SendMessage(msg.Chat.Id, "Please send a receipt photo with a visible QR code.");
                 break;
         }

@@ -64,7 +64,8 @@ internal class Program
                 sp.GetRequiredService<ReceiptClient>(),
                 sp.GetRequiredService<WeChatQrReader>(),
                 sp.GetRequiredService<UserService>(),
-                sp.GetRequiredService<CommandsHandler>()
+                sp.GetRequiredService<CommandsHandler>(),
+                sp.GetRequiredService<ILogger<TelegramClient>>()
         ));
 
         await using var serviceProvider = services.BuildServiceProvider();
