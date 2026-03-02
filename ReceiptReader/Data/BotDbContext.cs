@@ -39,11 +39,11 @@ internal class BotDbContext : DbContext
 
         modelBuilder.Entity<Product>()
             .Property(p => p.TotalPrice)
-            .HasPrecision(18, 2);
+            .HasPrecision(18, 4);
 
         modelBuilder.Entity<Product>()
             .Property(p => p.UnitPrice)
-            .HasPrecision(18, 2);
+            .HasPrecision(18, 4);
 
         // Safer for items sold by weight (e.g., 0.455 kg)
         modelBuilder.Entity<Product>()
