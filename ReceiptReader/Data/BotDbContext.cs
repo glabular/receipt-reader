@@ -32,5 +32,22 @@ internal class BotDbContext : DbContext
             .HasOne(p => p.Invoice)
             .WithMany(i => i.BoughtItems)
             .HasForeignKey(p => p.InvoiceId);
+
+        modelBuilder.Entity<Invoice>()
+            .Property(i => i.TotalSum)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Product>()
+            .Property(p => p.TotalPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Product>()
+            .Property(p => p.UnitPrice)
+            .HasPrecision(18, 2);
+
+        // Safer for items sold by weight (e.g., 0.455 kg)
+        modelBuilder.Entity<Product>()
+            .Property(p => p.Quantity)
+            .HasPrecision(18, 3);
     }
 }
