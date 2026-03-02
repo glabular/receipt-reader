@@ -13,12 +13,14 @@ internal class Program
 {
     static async Task Main()
     {
+        var logsFilePath = Path.Combine("D:\\Program Files", "ReceiptReader", "Logs", "log_.txt");
+
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .WriteTo.Console()
-            .WriteTo.File("serilog_logs67.txt",
+            .WriteTo.File(logsFilePath,
                 rollingInterval: RollingInterval.Day,
                 rollOnFileSizeLimit: true)
             .CreateLogger();
