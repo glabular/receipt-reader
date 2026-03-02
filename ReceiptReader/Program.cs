@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using ReceiptReader.Data;
 using ReceiptReader.Services;
 using Serilog;
+using Serilog.Events;
 
 namespace ReceiptReader;
 
@@ -14,6 +15,8 @@ internal class Program
     {
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("System", LogEventLevel.Warning)
             .WriteTo.Console()
             .WriteTo.File("serilog_logs67.txt",
                 rollingInterval: RollingInterval.Day,
