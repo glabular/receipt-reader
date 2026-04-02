@@ -13,7 +13,15 @@ internal class Program
 {
     static async Task Main()
     {
-        var logsFilePath = Path.Combine("D:\\Program Files", "ReceiptReader", "Logs", "log_.txt");
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+            .AddUserSecrets<Program>()
+            .Build();
+
+        var logsDirectory = LogsDirectoryResolver.Resolve(config);
+        Directory.CreateDirectory(logsDirectory);
+        var logsFilePath = Path.Combine(logsDirectory, "log_.txt");
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
@@ -24,10 +32,6 @@ internal class Program
                 rollingInterval: RollingInterval.Day,
                 rollOnFileSizeLimit: true)
             .CreateLogger();
-        
-        IConfiguration config = new ConfigurationBuilder()
-            .AddUserSecrets<Program>()
-            .Build();
 
         var telegramToken = config["TelegramBotToken"];
         var connectionString = config.GetConnectionString("DefaultConnection");
@@ -65,13 +69,14 @@ internal class Program
         services.AddScoped<TelegramClient>(sp =>
             new TelegramClient(
                 telegramToken,
+                logsDirectory,
                 sp.GetRequiredService<InvoiceService>(),
                 sp.GetRequiredService<ReceiptClient>(),
                 sp.GetRequiredService<WeChatQrReader>(),
                 sp.GetRequiredService<UserService>(),
                 sp.GetRequiredService<CommandsHandler>(),
                 sp.GetRequiredService<ILogger<TelegramClient>>()
-        ));
+            ));
 
         await using var serviceProvider = services.BuildServiceProvider();
         var invoiceService = serviceProvider.GetRequiredService<InvoiceService>();
