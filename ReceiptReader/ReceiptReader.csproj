@@ -33,6 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+	<None Update="appsettings.json">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
     <None Update="Models\OpenCvSharp4\detect.caffemodel">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
