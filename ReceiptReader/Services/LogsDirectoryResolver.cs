@@ -4,17 +4,20 @@ namespace ReceiptReader.Services;
 
 internal static class LogsDirectoryResolver
 {
-    public static string ResolveFromOptionalPath(string? configuredPath)
-    {
-        var trimmedPath = configuredPath?.Trim();
+    internal const string ConfigurationKey = "ReceiptReader:LogsDirectory";
 
-        if (string.IsNullOrWhiteSpace(trimmedPath))
+    public static string Resolve(IConfiguration configuration)
+    {
+        var configured = configuration[ConfigurationKey];
+
+        if (!string.IsNullOrWhiteSpace(configured))
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ReceiptReader", "Logs");
+            return Path.GetFullPath(configured);
         }
-        else
-        {
-            return trimmedPath;
-        }
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ReceiptReader",
+            "Logs");
     }
 }
