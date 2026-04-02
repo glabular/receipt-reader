@@ -1,4 +1,6 @@
-﻿namespace ReceiptReader.Services;
+﻿using Microsoft.Extensions.Configuration;
+
+namespace ReceiptReader.Services;
 
 internal static class LogsDirectoryResolver
 {
