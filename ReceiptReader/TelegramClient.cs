@@ -20,10 +20,11 @@ internal sealed class TelegramClient : IAsyncDisposable
     private readonly UserService _userService;
     private readonly CommandsHandler _commandsHandler;
     private readonly ILogger<TelegramClient> _logger;
-    private readonly string _logsDirectory = Path.Combine("D:\\Program Files", "ReceiptReader", "Logs");
+    private readonly string _logsDirectory;
 
     public TelegramClient(
-        string token, 
+        string token,
+        string logsDirectory,
         InvoiceService invoiceService,
         ReceiptClient receiptClient,
         WeChatQrReader qrReader,
@@ -32,6 +33,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         ILogger<TelegramClient> logger)
     {
         _bot = new TelegramBotClient(token);
+        _logsDirectory = logsDirectory;
         _invoiceService = invoiceService;
         _qrReader = qrReader;
         _userService = userService;
