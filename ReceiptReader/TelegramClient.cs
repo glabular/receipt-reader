@@ -71,7 +71,11 @@ internal sealed class TelegramClient : IAsyncDisposable
             return;
         }
 
-        var dbUser = await _userService.EnsureUserExistsAsync(msg.From);
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
+        var scopedSp = scope.ServiceProvider;
+        var userService = scopedSp.GetRequiredService<UserService>();
+
+        var dbUser = await userService.EnsureUserExistsAsync(msg.From);
 
         if (dbUser is null)
         {
