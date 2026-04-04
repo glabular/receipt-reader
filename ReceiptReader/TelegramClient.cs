@@ -86,7 +86,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         var typeOfMessage = GetMessageType(msg);
 
-        await HandleMessage(typeOfMessage, msg, dbUser);
+        await HandleMessage(typeOfMessage, msg, dbUser, scopedSp);
     }
 
     private async Task HandleValidUrlAsync(Message msg, TelegramUser user)
@@ -282,12 +282,13 @@ internal sealed class TelegramClient : IAsyncDisposable
         }
     }
 
-    private async Task HandleMessage(Enums.MessageType type, Message msg, TelegramUser user)
+    private async Task HandleMessage(Enums.MessageType type, Message msg, TelegramUser user, IServiceProvider serviceProvider)
     {
         switch (type)
         {
             case Enums.MessageType.Command:
-                await _commandsHandler.HandleAsync(_bot, msg);
+                var commandsHandler = serviceProvider.GetRequiredService<CommandsHandler>();
+                await commandsHandler.HandleAsync(_bot, msg);
                 break;
 
             case Enums.MessageType.Photo:
