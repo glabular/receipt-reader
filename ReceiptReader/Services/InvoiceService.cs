@@ -32,7 +32,7 @@ internal class InvoiceService
             .SumAsync();
     }
 
-    public async Task<decimal?> GetYearlyTotal(long telegramUserId, int year)
+    public async Task<decimal?> GetYearlyTotalAsync(long telegramUserId, int year)
     {
         return await GetUserInvoicesByDate(telegramUserId, year)
             .Select(i => (decimal?)i.TotalSum)

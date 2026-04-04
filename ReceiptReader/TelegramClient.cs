@@ -51,7 +51,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogCritical($"Failed to authenticate bot: {ex.Message}");
+            _logger.LogCritical(ex, "Failed to authenticate bot");
             throw;
         }
 
@@ -220,19 +220,12 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         Directory.CreateDirectory(userFolder);
 
-        try
+        await using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
-            await using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                await photoStream.CopyToAsync(fileStream);
-            }
+            await photoStream.CopyToAsync(fileStream);
+        }
 
-            return filePath;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        return filePath;
     }
 
     private async Task ProcessInvoiceUrlAsync(long chatId, string url, TelegramUser telegramUser)

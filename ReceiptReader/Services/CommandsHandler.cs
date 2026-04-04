@@ -114,7 +114,7 @@ internal class CommandsHandler
             "Calculating your total spending for this year..."
         );
 
-        var totalSpent = await _invoiceService.GetYearlyTotal(msg.From.Id, year);
+        var totalSpent = await _invoiceService.GetYearlyTotalAsync(msg.From.Id, year);
 
         if (totalSpent is null)
         {
