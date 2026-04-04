@@ -89,19 +89,20 @@ internal sealed class TelegramClient : IAsyncDisposable
         await HandleMessage(typeOfMessage, msg, dbUser, scopedSp);
     }
 
-    private async Task HandleValidUrlAsync(Message msg, TelegramUser user)
-    {
-        var url = msg.Text?.Trim();
+    // TODO: ??
+    //private async Task HandleValidUrlAsync(Message msg, TelegramUser user)
+    //{
+    //    var url = msg.Text?.Trim();
 
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            return;
-        }
+    //    if (string.IsNullOrWhiteSpace(url))
+    //    {
+    //        return;
+    //    }
 
-        await ProcessInvoiceUrlAsync(msg.Chat.Id, url, user);
-    }
+    //    await ProcessInvoiceUrlAsync(msg.Chat.Id, url, user);
+    //}
 
-    private async Task HandleSinglePhotoAsync(Message msg, TelegramUser user)
+    private async Task HandleSinglePhotoAsync(Message msg, TelegramUser user, IServiceProvider serviceProvider)
     {
         if (msg.Photo is null)
         {
@@ -132,7 +133,7 @@ internal sealed class TelegramClient : IAsyncDisposable
                 // Success.
                 _logger.LogInformation("User {TelegramUserId} scanned a valid QR code: {QrText}", user.TelegramUserId, qrText);
 
-                await ProcessInvoiceUrlAsync(msg.Chat.Id, qrText, user);
+                await ProcessInvoiceUrlAsync(msg.Chat.Id, qrText, user, serviceProvider);
             }
         }
         catch (Exception ex)
@@ -236,9 +237,11 @@ internal sealed class TelegramClient : IAsyncDisposable
         return filePath;
     }
 
-    private async Task ProcessInvoiceUrlAsync(long chatId, string url, TelegramUser telegramUser)
+    private async Task ProcessInvoiceUrlAsync(long chatId, string url, TelegramUser telegramUser, IServiceProvider serviceProvider)
     {
-        var exists = _invoiceService.InvoiceExists(url);
+        var invoiceService = serviceProvider.GetRequiredService<InvoiceService>();
+        var receiptClient = serviceProvider.GetRequiredService<ReceiptClient>();
+        var exists = invoiceService.InvoiceExists(url);
 
         if (exists)
         {
@@ -249,7 +252,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         await _bot.SendMessage(chatId, "📄 Your receipt is being processed. This may take a few moments.");
 
-        var invoice = _receiptClient.GetInvoice(url);
+        var invoice = receiptClient.GetInvoice(url);
 
         if (invoice is null)
         {
@@ -264,7 +267,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         try
         {
-            await _invoiceService.AddInvoiceAsync(invoice);
+            await invoiceService.AddInvoiceAsync(invoice);
 
             _logger.LogInformation("Invoice added successfully for user {TelegramUserId} with URL: {Url}", telegramUser.TelegramUserId, url);
 
@@ -292,7 +295,7 @@ internal sealed class TelegramClient : IAsyncDisposable
                 break;
 
             case Enums.MessageType.Photo:
-                await HandleSinglePhotoAsync(msg, user);
+                await HandleSinglePhotoAsync(msg, user, serviceProvider);
                 break;
 
             case Enums.MessageType.Text:
