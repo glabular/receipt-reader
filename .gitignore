@@ -46,10 +46,10 @@ _ReSharper*/
 # Office Temp Files
 ~$*
 
+appsettings.Local.json
 log.txt
 liquibase.local.properties
 *.orig
 *.playlist
 /packages
 packages
- 
