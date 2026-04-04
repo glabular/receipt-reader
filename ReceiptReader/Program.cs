@@ -75,6 +75,7 @@ internal class Program
                 sp.GetRequiredService<WeChatQrReader>(),
                 sp.GetRequiredService<UserService>(),
                 sp.GetRequiredService<CommandsHandler>(),
+                sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ILogger<TelegramClient>>()
             ));
 

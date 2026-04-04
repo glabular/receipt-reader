@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using ReceiptReader.Models;
@@ -19,6 +20,7 @@ internal sealed class TelegramClient : IAsyncDisposable
     private readonly WeChatQrReader _qrReader;
     private readonly UserService _userService;
     private readonly CommandsHandler _commandsHandler;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<TelegramClient> _logger;
     private readonly string _logsDirectory;
 
@@ -30,6 +32,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         WeChatQrReader qrReader,
         UserService userService,
         CommandsHandler commandsHandler,
+        IServiceScopeFactory serviceScopeFactory,
         ILogger<TelegramClient> logger)
     {
         _bot = new TelegramBotClient(token);
@@ -38,6 +41,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         _qrReader = qrReader;
         _userService = userService;
         _commandsHandler = commandsHandler;
+        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
         _receiptClient = receiptClient;
     }
