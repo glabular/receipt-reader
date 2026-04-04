@@ -211,9 +211,11 @@ internal sealed class TelegramClient : IAsyncDisposable
     private async Task<string?> SavePhotoToLogsAsync(PhotoSize photo, TelegramUser user)
     {
         using var photoStream = await DownloadPhotoToMemoryAsync(photo.FileId);
-        var fileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid()}.jpg";
-        var monthFolder = DateTime.UtcNow.ToString("MM");
-        var userFolder = Path.Combine(_logsDirectory, user.TelegramUserId.ToString(), monthFolder);
+        var now = DateTime.UtcNow;
+        var fileName = $"{now:yyyyMMdd_HHmmss}_{Guid.NewGuid()}.jpg";
+        var yearFolder = now.ToString("yyyy");
+        var monthFolder = now.ToString("MM");
+        var userFolder = Path.Combine(_logsDirectory, user.TelegramUserId.ToString(), yearFolder, monthFolder);
         var filePath = Path.Combine(userFolder, fileName);
 
         Directory.CreateDirectory(userFolder);
