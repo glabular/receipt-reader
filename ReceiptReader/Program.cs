@@ -79,7 +79,6 @@ internal class Program
             ));
 
         await using var serviceProvider = services.BuildServiceProvider();
-        var invoiceService = serviceProvider.GetRequiredService<InvoiceService>();
         var telegramClient = serviceProvider.GetRequiredService<TelegramClient>();
 
         try

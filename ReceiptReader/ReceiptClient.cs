@@ -5,6 +5,7 @@ namespace ReceiptReader;
 
 internal sealed class ReceiptClient : IDisposable
 {
+    // TODO: Think on adding a global semaphore (e.g. max 1–2 concurrent browsers)
     private readonly BrowserEngine _browser;
 
     public ReceiptClient(TimeSpan? browserTimeout = null)
