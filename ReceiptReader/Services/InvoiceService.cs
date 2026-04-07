@@ -6,6 +6,8 @@ namespace ReceiptReader.Services;
 
 internal class InvoiceService
 {
+    internal sealed record ItemSpendingStat(string ProductName, decimal TotalSpent);
+
     private readonly BotDbContext _dbContext;
 
     public InvoiceService(BotDbContext dbContext)
@@ -37,6 +39,49 @@ internal class InvoiceService
         return await GetUserInvoicesByDate(telegramUserId, year)
             .Select(i => (decimal?)i.TotalSum)
             .SumAsync();
+    }
+
+    public async Task<IReadOnlyList<ItemSpendingStat>> GetTopSpentItemsByMonthAsync(
+        long telegramUserId,
+        int month,
+        int year,
+        int topCount)
+    {
+        return await GetTopSpentItemsAsync(telegramUserId, year, topCount, month);
+    }
+
+    public async Task<IReadOnlyList<ItemSpendingStat>> GetTopSpentItemsByYearAsync(
+        long telegramUserId,
+        int year,
+        int topCount)
+    {
+        return await GetTopSpentItemsAsync(telegramUserId, year, topCount);
+    }
+
+    private async Task<IReadOnlyList<ItemSpendingStat>> GetTopSpentItemsAsync(
+        long telegramUserId,
+        int year,
+        int topCount,
+        int? month = null)
+    {
+        var invoiceIdsQuery = GetUserInvoicesByDate(telegramUserId, year, month)
+            .Select(i => i.Id);
+
+        var rawStats = await _dbContext.Products
+            .Where(p => invoiceIdsQuery.Contains(p.InvoiceId))
+            .GroupBy(p => p.Name)
+            .Select(g => new
+            {
+                ProductName = g.Key,
+                TotalSpent = g.Sum(p => p.TotalPrice)
+            })
+            .OrderByDescending(s => s.TotalSpent)
+            .Take(topCount)
+            .ToListAsync();
+
+        return rawStats
+            .Select(s => new ItemSpendingStat(s.ProductName, s.TotalSpent))
+            .ToList();
     }
 
     private IQueryable<Invoice> GetUserInvoicesByDate(long telegramUserId, int year, int? month = null)

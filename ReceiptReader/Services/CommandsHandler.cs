@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using ReceiptReader.Services.Messaging.Commands;
+using System.Text;
 
 namespace ReceiptReader.Services;
 
@@ -82,12 +83,25 @@ internal sealed class CommandsHandler
         if (totalSpent is null)
         {
             _logger.LogInformation("No monthly data found for user {UserId} (Month: {Month})", userId, month);
-            messages.Add("No receipts found for this month.");
+            messages.Add("📭 No receipts found for this month yet.");
         }
         else
         {
-            _logger.LogInformation("Successfully calculated monthly total for user {UserId}: {Total}", userId, totalSpent);
-            messages.Add($"Your total spending this month is: {totalSpent.Value:F2}");
+            try
+            {
+                var topItems = await _invoiceService.GetTopSpentItemsByMonthAsync(userId, month, year, topCount: 5);
+                _logger.LogInformation("Successfully calculated monthly total for user {UserId}: {Total}", userId, totalSpent);
+                messages.Add(BuildSpendingSummaryMessage(
+                    periodLabel: $"month ({month:D2}/{year})",
+                    totalSpent: totalSpent.Value,
+                    topItems: topItems,
+                    topItemsTitle: "Top 5 most bought items"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load monthly top item stats for user {UserId}", userId);
+                messages.Add($"💸 Your total spending for this month ({month:D2}/{year}) is: {totalSpent.Value:F2} EUR");
+            }
         }
 
         return new CommandResult { Messages = messages };
@@ -103,12 +117,25 @@ internal sealed class CommandsHandler
         if (totalSpent is null)
         {
             _logger.LogInformation("No yearly data found for user {UserId} (Year: {Year})", userId, year);
-            messages.Add("No receipts found for this year.");
+            messages.Add("📭 No receipts found for this year yet.");
         }
         else
         {
-            _logger.LogInformation("Successfully calculated yearly total for user {UserId}: {Total}", userId, totalSpent);
-            messages.Add($"Your total spending this year is: {totalSpent.Value:F2}");
+            try
+            {
+                var topItems = await _invoiceService.GetTopSpentItemsByYearAsync(userId, year, topCount: 10);
+                _logger.LogInformation("Successfully calculated yearly total for user {UserId}: {Total}", userId, totalSpent);
+                messages.Add(BuildSpendingSummaryMessage(
+                    periodLabel: $"year ({year})",
+                    totalSpent: totalSpent.Value,
+                    topItems: topItems,
+                    topItemsTitle: "Top 10 most bought items"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load yearly top item stats for user {UserId}", userId);
+                messages.Add($"💸 Your total spending for this year ({year}) is: {totalSpent.Value:F2} EUR");
+            }
         }
 
         return new CommandResult { Messages = messages };
@@ -151,5 +178,43 @@ internal sealed class CommandsHandler
         {
             Messages = [message]
         };
+    }
+
+    private static string BuildSpendingSummaryMessage(
+        string periodLabel,
+        decimal totalSpent,
+        IReadOnlyList<InvoiceService.ItemSpendingStat> topItems,
+        string topItemsTitle)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"💸 Your total spending for this {periodLabel} is: {totalSpent:F2} EUR");
+
+        if (topItems.Count == 0)
+        {
+            sb.AppendLine("🧾 No item statistics available for this period.");
+            return sb.ToString().TrimEnd();
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"📊 {topItemsTitle}:");
+        for (var i = 0; i < topItems.Count; i++)
+        {
+            var item = topItems[i];
+            sb.AppendLine($"{i + 1}. {FormatProductName(item.ProductName)} — {item.TotalSpent:F2} EUR");
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string FormatProductName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "Unknown";
+        }
+
+        return name.Length == 1
+            ? char.ToUpper(name[0]).ToString()
+            : char.ToUpper(name[0]) + name[1..].ToLower();
     }
 }
