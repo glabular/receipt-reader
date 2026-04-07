@@ -8,17 +8,20 @@ internal sealed class CommandsHandler
     private readonly InvoiceService _invoiceService;
     private readonly UserService _userService;
     private readonly SpendingSummaryFormatter _spendingSummaryFormatter;
+    private readonly SpendingAccessResolver _spendingAccessResolver;
     private readonly ILogger<CommandsHandler> _logger;
 
     public CommandsHandler(
         InvoiceService invoiceService,
         UserService userService,
         SpendingSummaryFormatter spendingSummaryFormatter,
+        SpendingAccessResolver spendingAccessResolver,
         ILogger<CommandsHandler> logger)
     {
         _invoiceService = invoiceService;
         _userService = userService;
         _spendingSummaryFormatter = spendingSummaryFormatter;
+        _spendingAccessResolver = spendingAccessResolver;
         _logger = logger;
     }
 
@@ -76,23 +79,32 @@ internal sealed class CommandsHandler
 
     private async Task<CommandResult> HandleSpentMonthAsync(CommandRequest request, CancellationToken cancellationToken)
     {
-        var userId = request.TelegramUserId;
+        var requesterUserId = request.TelegramUserId;
+        var ownerUserId = _spendingAccessResolver.ResolveOwnerTelegramUserId(requesterUserId);
         var month = DateTime.UtcNow.Month;
         var year = DateTime.UtcNow.Year;
         var messages = new List<string>();
-        var totalSpent = await _invoiceService.GetMonthlyTotalAsync(request.TelegramUserId, month, year);
+        var totalSpent = await _invoiceService.GetMonthlyTotalAsync(ownerUserId, month, year);
 
         if (totalSpent is null)
         {
-            _logger.LogInformation("No monthly data found for user {UserId} (Month: {Month})", userId, month);
+            _logger.LogInformation(
+                "No monthly data found for requester {RequesterUserId} using owner {OwnerUserId} (Month: {Month})",
+                requesterUserId,
+                ownerUserId,
+                month);
             messages.Add("📭 No receipts found for this month yet.");
         }
         else
         {
             try
             {
-                var topItems = await _invoiceService.GetTopSpentItemsByMonthAsync(userId, month, year, topCount: 5);
-                _logger.LogInformation("Successfully calculated monthly total for user {UserId}: {Total}", userId, totalSpent);
+                var topItems = await _invoiceService.GetTopSpentItemsByMonthAsync(ownerUserId, month, year, topCount: 5);
+                _logger.LogInformation(
+                    "Successfully calculated monthly total for requester {RequesterUserId} using owner {OwnerUserId}: {Total}",
+                    requesterUserId,
+                    ownerUserId,
+                    totalSpent);
                 messages.Add(_spendingSummaryFormatter.Build(
                     periodLabel: $"month ({month:D2}/{year})",
                     totalSpent: totalSpent.Value,
@@ -101,7 +113,11 @@ internal sealed class CommandsHandler
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load monthly top item stats for user {UserId}", userId);
+                _logger.LogError(
+                    ex,
+                    "Failed to load monthly top item stats for requester {RequesterUserId} using owner {OwnerUserId}",
+                    requesterUserId,
+                    ownerUserId);
                 messages.Add($"💸 Your total spending for this month ({month:D2}/{year}) is: {totalSpent.Value:F2} EUR");
             }
         }
@@ -111,22 +127,31 @@ internal sealed class CommandsHandler
 
     private async Task<CommandResult> HandleSpentYearAsync(CommandRequest request, CancellationToken cancellationToken)
     {
-        var userId = request.TelegramUserId;
+        var requesterUserId = request.TelegramUserId;
+        var ownerUserId = _spendingAccessResolver.ResolveOwnerTelegramUserId(requesterUserId);
         var year = DateTime.UtcNow.Year;
         var messages = new List<string>();
-        var totalSpent = await _invoiceService.GetYearlyTotalAsync(request.TelegramUserId, year);
+        var totalSpent = await _invoiceService.GetYearlyTotalAsync(ownerUserId, year);
 
         if (totalSpent is null)
         {
-            _logger.LogInformation("No yearly data found for user {UserId} (Year: {Year})", userId, year);
+            _logger.LogInformation(
+                "No yearly data found for requester {RequesterUserId} using owner {OwnerUserId} (Year: {Year})",
+                requesterUserId,
+                ownerUserId,
+                year);
             messages.Add("📭 No receipts found for this year yet.");
         }
         else
         {
             try
             {
-                var topItems = await _invoiceService.GetTopSpentItemsByYearAsync(userId, year, topCount: 10);
-                _logger.LogInformation("Successfully calculated yearly total for user {UserId}: {Total}", userId, totalSpent);
+                var topItems = await _invoiceService.GetTopSpentItemsByYearAsync(ownerUserId, year, topCount: 10);
+                _logger.LogInformation(
+                    "Successfully calculated yearly total for requester {RequesterUserId} using owner {OwnerUserId}: {Total}",
+                    requesterUserId,
+                    ownerUserId,
+                    totalSpent);
                 messages.Add(_spendingSummaryFormatter.Build(
                     periodLabel: $"year ({year})",
                     totalSpent: totalSpent.Value,
@@ -135,7 +160,11 @@ internal sealed class CommandsHandler
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load yearly top item stats for user {UserId}", userId);
+                _logger.LogError(
+                    ex,
+                    "Failed to load yearly top item stats for requester {RequesterUserId} using owner {OwnerUserId}",
+                    requesterUserId,
+                    ownerUserId);
                 messages.Add($"💸 Your total spending for this year ({year}) is: {totalSpent.Value:F2} EUR");
             }
         }

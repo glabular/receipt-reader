@@ -9,17 +9,20 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
     private readonly UserService _userService;
     private readonly InvoiceService _invoiceService;
     private readonly SpendingSummaryFormatter _spendingSummaryFormatter;
+    private readonly SpendingAccessResolver _spendingAccessResolver;
     private readonly ILogger<FallbackMessageHandler> _logger;
 
     public FallbackMessageHandler(
         UserService userService,
         InvoiceService invoiceService,
         SpendingSummaryFormatter spendingSummaryFormatter,
+        SpendingAccessResolver spendingAccessResolver,
         ILogger<FallbackMessageHandler> logger)
     {
         _userService = userService;
         _invoiceService = invoiceService;
         _spendingSummaryFormatter = spendingSummaryFormatter;
+        _spendingAccessResolver = spendingAccessResolver;
         _logger = logger;
     }
 
@@ -64,13 +67,13 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
 
     private async Task HandleSpentMonthSelectInputAsync(
         TelegramMessageContext context,
-        long userId,
+        long requesterUserId,
         CancellationToken cancellationToken)
     {
         var rawText = context.Message.Text?.Trim() ?? string.Empty;
         if (!TryParseMonthYear(rawText, out var month, out var year))
         {
-            await _userService.ClearPendingCommandAsync(userId);
+            await _userService.ClearPendingCommandAsync(requesterUserId);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
                 "Invalid date input. Command aborted.\n" +
@@ -81,8 +84,9 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
             return;
         }
 
-        var totalSpent = await _invoiceService.GetMonthlyTotalAsync(userId, month, year);
-        await _userService.ClearPendingCommandAsync(userId);
+        var ownerUserId = _spendingAccessResolver.ResolveOwnerTelegramUserId(requesterUserId);
+        var totalSpent = await _invoiceService.GetMonthlyTotalAsync(ownerUserId, month, year);
+        await _userService.ClearPendingCommandAsync(requesterUserId);
 
         if (totalSpent is null)
         {
@@ -95,7 +99,7 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
 
         try
         {
-            var topItems = await _invoiceService.GetTopSpentItemsByMonthAsync(userId, month, year, topCount: 5);
+            var topItems = await _invoiceService.GetTopSpentItemsByMonthAsync(ownerUserId, month, year, topCount: 5);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
                 _spendingSummaryFormatter.Build(
@@ -108,7 +112,11 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load monthly top item stats for user {UserId}", userId);
+            _logger.LogError(
+                ex,
+                "Failed to load monthly top item stats for requester {RequesterUserId} using owner {OwnerUserId}",
+                requesterUserId,
+                ownerUserId);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
                 $"💸 Your total spending for this month ({month:D2}/{year}) is: {totalSpent.Value:F2} EUR",
@@ -148,13 +156,13 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
 
     private async Task HandleSpentYearSelectInputAsync(
         TelegramMessageContext context,
-        long userId,
+        long requesterUserId,
         CancellationToken cancellationToken)
     {
         var rawText = context.Message.Text?.Trim() ?? string.Empty;
         if (!TryParseYear(rawText, out var year))
         {
-            await _userService.ClearPendingCommandAsync(userId);
+            await _userService.ClearPendingCommandAsync(requesterUserId);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
                 "Invalid year input. Command aborted.\n" +
@@ -164,8 +172,9 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
             return;
         }
 
-        var totalSpent = await _invoiceService.GetYearlyTotalAsync(userId, year);
-        await _userService.ClearPendingCommandAsync(userId);
+        var ownerUserId = _spendingAccessResolver.ResolveOwnerTelegramUserId(requesterUserId);
+        var totalSpent = await _invoiceService.GetYearlyTotalAsync(ownerUserId, year);
+        await _userService.ClearPendingCommandAsync(requesterUserId);
 
         if (totalSpent is null)
         {
@@ -178,7 +187,7 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
 
         try
         {
-            var topItems = await _invoiceService.GetTopSpentItemsByYearAsync(userId, year, topCount: 10);
+            var topItems = await _invoiceService.GetTopSpentItemsByYearAsync(ownerUserId, year, topCount: 10);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
                 _spendingSummaryFormatter.Build(
@@ -191,7 +200,11 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load yearly top item stats for user {UserId}", userId);
+            _logger.LogError(
+                ex,
+                "Failed to load yearly top item stats for requester {RequesterUserId} using owner {OwnerUserId}",
+                requesterUserId,
+                ownerUserId);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
                 $"💸 Your total spending for this year ({year}) is: {totalSpent.Value:F2} EUR",

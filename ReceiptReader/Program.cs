@@ -56,6 +56,7 @@ internal class Program
         }
 
         var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(config);
 
         services.AddLogging(loggingBuilder =>
         {
@@ -68,6 +69,7 @@ internal class Program
 
         services.AddScoped<InvoiceService>();
         services.AddScoped<SpendingSummaryFormatter>();
+        services.AddSingleton<SpendingAccessResolver>();
         services.AddScoped<UserService>();
         services.AddScoped<ReceiptClient>();
         services.AddSingleton<WeChatQrReader>();
