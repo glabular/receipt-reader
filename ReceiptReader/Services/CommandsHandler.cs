@@ -42,6 +42,9 @@ internal sealed class CommandsHandler
             case "/spent_year":
                 return await HandleSpentYearAsync(request, cancellationToken);
 
+            case "/spent_year_select":
+                return await HandleSpentYearSelectAsync(request, cancellationToken);
+
             default:
                 _logger.LogWarning("Unknown command received: {Command} from {UserId}", command, request.TelegramUserId);
                 return BuildSingleMessageResult("Unknown command.");
@@ -56,6 +59,7 @@ internal sealed class CommandsHandler
                "/spent_month – View total spending for the current month\n" +
                "/spent_month_select – Select month interactively (MM or MM YYYY)\n" +
                "/spent_year – View total spending for the current year\n" +
+               "/spent_year_select – Select year interactively (YYYY)\n" +
                "Or use the Menu button\n\n" +
                "To analyze a receipt, send a clear photo with a visible QR code.";
     }
@@ -130,6 +134,21 @@ internal sealed class CommandsHandler
             "- MM (uses current year)\n" +
             "- MM YYYY (specific year)\n\n" +
             "Examples: 03 or 03 2026");
+    }
+
+    private async Task<CommandResult> HandleSpentYearSelectAsync(
+        CommandRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _userService.SetPendingCommandAsync(request.TelegramUserId, UserService.SpentYearSelectPendingCommand);
+        _logger.LogInformation(
+            "User {UserId} started conversational /spent_year_select flow",
+            request.TelegramUserId);
+
+        return BuildSingleMessageResult(
+            "Enter year to check spending:\n" +
+            "- YYYY\n\n" +
+            "Example: 2026");
     }
 
     private static CommandResult BuildSingleMessageResult(string message)

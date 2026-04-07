@@ -9,6 +9,7 @@ namespace ReceiptReader.Services;
 internal class UserService
 {
     internal const string SpentMonthSelectPendingCommand = "spent_month_select";
+    internal const string SpentYearSelectPendingCommand = "spent_year_select";
     private static readonly ConcurrentDictionary<long, string> PendingCommands = new();
 
     private readonly BotDbContext _dbContext;

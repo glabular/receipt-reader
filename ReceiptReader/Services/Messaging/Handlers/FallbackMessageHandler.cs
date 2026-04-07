@@ -36,6 +36,15 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
                 await HandleSpentMonthSelectInputAsync(context, userId.Value, cancellationToken);
                 return;
             }
+
+            if (string.Equals(
+                pendingCommand,
+                UserService.SpentYearSelectPendingCommand,
+                StringComparison.Ordinal))
+            {
+                await HandleSpentYearSelectInputAsync(context, userId.Value, cancellationToken);
+                return;
+            }
         }
 
         _logger.LogWarning(
@@ -114,5 +123,52 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
         }
 
         return true;
+    }
+
+    private async Task HandleSpentYearSelectInputAsync(
+        TelegramMessageContext context,
+        long userId,
+        CancellationToken cancellationToken)
+    {
+        var rawText = context.Message.Text?.Trim() ?? string.Empty;
+        if (!TryParseYear(rawText, out var year))
+        {
+            await _userService.ClearPendingCommandAsync(userId);
+            await context.Bot.SendMessage(
+                context.Message.Chat.Id,
+                "Invalid year input. Command aborted.\n" +
+                "Run /spent_year_select again and use:\n" +
+                "- YYYY",
+                cancellationToken: cancellationToken);
+            return;
+        }
+
+        var totalSpent = await _invoiceService.GetYearlyTotalAsync(userId, year);
+        await _userService.ClearPendingCommandAsync(userId);
+
+        if (totalSpent is null)
+        {
+            await context.Bot.SendMessage(
+                context.Message.Chat.Id,
+                $"No receipts found for {year}.",
+                cancellationToken: cancellationToken);
+            return;
+        }
+
+        await context.Bot.SendMessage(
+            context.Message.Chat.Id,
+            $"Your total spending for {year} is: {totalSpent.Value:F2}",
+            cancellationToken: cancellationToken);
+    }
+
+    private static bool TryParseYear(string input, out int year)
+    {
+        year = default;
+        if (input.Length != 4 || !int.TryParse(input, out year))
+        {
+            return false;
+        }
+
+        return year is >= 2000 and <= 2100;
     }
 }
