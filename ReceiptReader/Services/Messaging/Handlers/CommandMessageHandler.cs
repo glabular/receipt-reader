@@ -38,6 +38,22 @@ internal sealed class CommandMessageHandler : ITelegramMessageHandler
             Text = context.Message.Text
         };
 
+        var command = request.Text?.Trim().Split(' ')[0].ToLowerInvariant();
+        if (command == "/spent_month")
+        {
+            await context.Bot.SendMessage(
+                context.Message.Chat.Id,
+                "Calculating your total spending for this month...",
+                cancellationToken: cancellationToken);
+        }
+        else if (command == "/spent_year")
+        {
+            await context.Bot.SendMessage(
+                context.Message.Chat.Id,
+                "Calculating your total spending for this year...",
+                cancellationToken: cancellationToken);
+        }
+
         var result = await _commandsHandler.HandleAsync(request, cancellationToken);
 
         foreach (var message in result.Messages)

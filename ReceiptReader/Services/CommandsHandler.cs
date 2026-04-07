@@ -76,10 +76,7 @@ internal sealed class CommandsHandler
         var userId = request.TelegramUserId;
         var month = DateTime.UtcNow.Month;
         var year = DateTime.UtcNow.Year;
-        var messages = new List<string>
-        {
-            "Calculating your total spending for this month..."
-        };
+        var messages = new List<string>();
         var totalSpent = await _invoiceService.GetMonthlyTotalAsync(request.TelegramUserId, month, year);
 
         if (totalSpent is null)
@@ -100,10 +97,7 @@ internal sealed class CommandsHandler
     {
         var userId = request.TelegramUserId;
         var year = DateTime.UtcNow.Year;
-        var messages = new List<string>
-        {
-            "Calculating your total spending for this year..."
-        };
+        var messages = new List<string>();
         var totalSpent = await _invoiceService.GetYearlyTotalAsync(request.TelegramUserId, year);
 
         if (totalSpent is null)
