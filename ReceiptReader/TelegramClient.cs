@@ -15,11 +15,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 {
     private readonly TelegramBotClient _bot;
     private readonly HashSet<string> _processedGroups = [];
-    private readonly InvoiceService _invoiceService;
-    private readonly ReceiptClient _receiptClient;
     private readonly WeChatQrReader _qrReader;
-    private readonly UserService _userService;
-    private readonly CommandsHandler _commandsHandler;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<TelegramClient> _logger;
     private readonly string _logsDirectory;
@@ -27,23 +23,15 @@ internal sealed class TelegramClient : IAsyncDisposable
     public TelegramClient(
         string token,
         string logsDirectory,
-        InvoiceService invoiceService,
-        ReceiptClient receiptClient,
         WeChatQrReader qrReader,
-        UserService userService,
-        CommandsHandler commandsHandler,
         IServiceScopeFactory serviceScopeFactory,
         ILogger<TelegramClient> logger)
     {
         _bot = new TelegramBotClient(token);
         _logsDirectory = logsDirectory;
-        _invoiceService = invoiceService;
         _qrReader = qrReader;
-        _userService = userService;
-        _commandsHandler = commandsHandler;
         _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
-        _receiptClient = receiptClient;
     }
 
     public async Task StartAsync()
@@ -312,6 +300,5 @@ internal sealed class TelegramClient : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _qrReader.Dispose();
-        _receiptClient.Dispose();
     }
 }

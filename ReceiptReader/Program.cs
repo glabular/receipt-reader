@@ -70,11 +70,7 @@ internal class Program
             new TelegramClient(
                 telegramToken,
                 logsDirectory,
-                sp.GetRequiredService<InvoiceService>(),
-                sp.GetRequiredService<ReceiptClient>(),
                 sp.GetRequiredService<WeChatQrReader>(),
-                sp.GetRequiredService<UserService>(),
-                sp.GetRequiredService<CommandsHandler>(),
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ILogger<TelegramClient>>()
             ));
