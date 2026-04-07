@@ -3,6 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ReceiptReader.Data;
+using ReceiptReader.Services.Invoices;
+using ReceiptReader.Services.Messaging;
+using ReceiptReader.Services.Messaging.Handlers;
+using ReceiptReader.Services.Photos;
 using ReceiptReader.Services;
 using Serilog;
 using Serilog.Events;
@@ -66,11 +70,22 @@ internal class Program
         services.AddScoped<ReceiptClient>();
         services.AddSingleton<WeChatQrReader>();
         services.AddScoped<CommandsHandler>();
-        services.AddScoped<TelegramClient>(sp =>
+        services.AddScoped<TelegramUpdateProcessor>();
+        services.AddScoped<TelegramMessageClassifier>();
+        services.AddScoped<IMessageRouter, MessageRouter>();
+        services.AddScoped<ITelegramMessageHandler, CommandMessageHandler>();
+        services.AddScoped<ITelegramMessageHandler, PhotoMessageHandler>();
+        services.AddScoped<ITelegramMessageHandler, FallbackMessageHandler>();
+        services.AddScoped<PhotoStorageService>(sp =>
+            new PhotoStorageService(
+                logsDirectory,
+                sp.GetRequiredService<ILogger<PhotoStorageService>>()));
+        services.AddScoped<QrExtractionService>();
+        services.AddScoped<InvoiceProcessingService>();
+        services.AddScoped<InvoiceMessageFormatter>();
+        services.AddSingleton<TelegramClient>(sp =>
             new TelegramClient(
                 telegramToken,
-                logsDirectory,
-                sp.GetRequiredService<WeChatQrReader>(),
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ILogger<TelegramClient>>()
             ));
@@ -84,8 +99,7 @@ internal class Program
             ValidateOnBuild = isDevelopment
         });
 
-        await using var startupScope = serviceProvider.CreateAsyncScope();
-        var telegramClient = startupScope.ServiceProvider.GetRequiredService<TelegramClient>();
+        var telegramClient = serviceProvider.GetRequiredService<TelegramClient>();
 
         try
         {

@@ -3,7 +3,6 @@
 public enum MessageType
 {
     Command,
-    ValidUrl,
     Photo,
     Album,
     Text,
