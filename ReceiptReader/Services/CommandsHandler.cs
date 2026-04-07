@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using Telegram.Bot;
-using Telegram.Bot.Types;
+using ReceiptReader.Services.Messaging.Commands;
 
 namespace ReceiptReader.Services;
 
-internal class CommandsHandler
+internal sealed class CommandsHandler
 {
     private readonly InvoiceService _invoiceService;
     private readonly ILogger<CommandsHandler> _logger;
@@ -15,118 +14,103 @@ internal class CommandsHandler
         _logger = logger;
     }
 
-    // TODO: Add user to the signature for future logging.
-    public async Task HandleAsync(TelegramBotClient bot, Message msg)
+    public async Task<CommandResult> HandleAsync(CommandRequest request, CancellationToken cancellationToken = default)
     {
-        var command = msg.Text?.Trim().Split(' ')[0].ToLower();
-
-        if (msg.From is null)
-        {
-            _logger.LogWarning("Received message with no sender info: {MessageId}", msg.MessageId);
-            return;
-        }
-
-        _logger.LogInformation("Received command {Command} from user {TelegramUserId}", command, msg.From.Id);
+        var command = request.Text?.Trim().Split(' ')[0].ToLowerInvariant();
+        _logger.LogInformation("Received command {Command} from user {TelegramUserId}", command, request.TelegramUserId);
 
         switch (command)
         {
             case "/start":
-                await HandleStartAsync(bot, msg);
-                break;
+                return BuildSingleMessageResult(GetStartText());
 
             case "/help":
-                await HandleHelpAsync(bot, msg);
-                break;
+                return BuildSingleMessageResult(GetHelpText());
 
             case "/spent_month":
-                await HandleSpentMonthAsync(bot, msg);
-                break;
+                return await HandleSpentMonthAsync(request, cancellationToken);
 
             case "/spent_year":
-                await HandleSpentYearAsync(bot, msg);
-                break;
+                return await HandleSpentYearAsync(request, cancellationToken);
 
             default:
-                _logger.LogWarning("Unknown command received: {Command} from {UserId}", command, msg.From.Id);
-                await bot.SendMessage(msg.Chat.Id, "Unknown command.");
-                break;
+                _logger.LogWarning("Unknown command received: {Command} from {UserId}", command, request.TelegramUserId);
+                return BuildSingleMessageResult("Unknown command.");
         }
     }
 
-    private static async Task HandleHelpAsync(TelegramBotClient bot, Message msg)
+    private static string GetHelpText()
     {
-        await bot.SendMessage(
-            msg.Chat.Id,
-            "Available commands:\n\n" +
-            "/start – Introduction\n" +
-            "/help – Show available commands\n" +
-            "/spent_month – View total spending for the current month\n" +
-            "/spent_year – View total spending for the current year\n" +
-            "Or use the Menu button\n\n" +
-            "To analyze a receipt, send a clear photo with a visible QR code."
-        );
+        return "Available commands:\n\n" +
+               "/start – Introduction\n" +
+               "/help – Show available commands\n" +
+               "/spent_month – View total spending for the current month\n" +
+               "/spent_year – View total spending for the current year\n" +
+               "Or use the Menu button\n\n" +
+               "To analyze a receipt, send a clear photo with a visible QR code.";
     }
 
-    private static async Task HandleStartAsync(TelegramBotClient bot, Message msg)
+    private static string GetStartText()
     {
-        await bot.SendMessage(
-            msg.Chat.Id,
-            "Welcome.\n\n" +
-            "Send a receipt photo with a clearly visible QR code.\n" +
-            "I will extract the items and calculate the total amount."
-        );
+        return "Welcome.\n\n" +
+               "Send a receipt photo with a clearly visible QR code.\n" +
+               "I will extract the items and calculate the total amount.";
     }
 
-    private async Task HandleSpentMonthAsync(TelegramBotClient bot, Message msg)
+    private async Task<CommandResult> HandleSpentMonthAsync(CommandRequest request, CancellationToken cancellationToken)
     {
-        var userId = msg.From!.Id; // ! msg.From is checked for null in the caller method.
+        var userId = request.TelegramUserId;
         var month = DateTime.UtcNow.Month;
         var year = DateTime.UtcNow.Year;
-
-        await bot.SendMessage(
-            msg.Chat.Id,
+        var messages = new List<string>
+        {
             "Calculating your total spending for this month..."
-        );
-
-        var totalSpent = await _invoiceService.GetMonthlyTotalAsync(msg.From.Id, month, year);
+        };
+        var totalSpent = await _invoiceService.GetMonthlyTotalAsync(request.TelegramUserId, month, year);
 
         if (totalSpent is null)
         {
             _logger.LogInformation("No monthly data found for user {UserId} (Month: {Month})", userId, month);
-            await bot.SendMessage(msg.Chat.Id,
-                "No receipts found for this month.");
+            messages.Add("No receipts found for this month.");
         }
         else
         {
             _logger.LogInformation("Successfully calculated monthly total for user {UserId}: {Total}", userId, totalSpent);
-            await bot.SendMessage(msg.Chat.Id,
-                $"Your total spending this month is: {totalSpent.Value:F2}");
+            messages.Add($"Your total spending this month is: {totalSpent.Value:F2}");
         }
+
+        return new CommandResult { Messages = messages };
     }
 
-    private async Task HandleSpentYearAsync(TelegramBotClient bot, Message msg)
+    private async Task<CommandResult> HandleSpentYearAsync(CommandRequest request, CancellationToken cancellationToken)
     {
-        var userId = msg.From!.Id; // ! msg.From is checked for null in the caller method.
+        var userId = request.TelegramUserId;
         var year = DateTime.UtcNow.Year;
-
-        await bot.SendMessage(
-            msg.Chat.Id,
+        var messages = new List<string>
+        {
             "Calculating your total spending for this year..."
-        );
-
-        var totalSpent = await _invoiceService.GetYearlyTotalAsync(msg.From.Id, year);
+        };
+        var totalSpent = await _invoiceService.GetYearlyTotalAsync(request.TelegramUserId, year);
 
         if (totalSpent is null)
         {
             _logger.LogInformation("No yearly data found for user {UserId} (Year: {Year})", userId, year);
-            await bot.SendMessage(msg.Chat.Id,
-                "No receipts found for this year.");
+            messages.Add("No receipts found for this year.");
         }
         else
         {
             _logger.LogInformation("Successfully calculated yearly total for user {UserId}: {Total}", userId, totalSpent);
-            await bot.SendMessage(msg.Chat.Id,
-                $"Your total spending this year is: {totalSpent.Value:F2}");
+            messages.Add($"Your total spending this year is: {totalSpent.Value:F2}");
         }
+
+        return new CommandResult { Messages = messages };
+    }
+
+    private static CommandResult BuildSingleMessageResult(string message)
+    {
+        return new CommandResult
+        {
+            Messages = [message]
+        };
     }
 }
