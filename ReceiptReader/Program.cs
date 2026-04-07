@@ -20,6 +20,7 @@ internal class Program
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+            .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false)
             .AddUserSecrets<Program>()
             .Build();
 
