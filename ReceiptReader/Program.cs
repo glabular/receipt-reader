@@ -73,9 +73,9 @@ internal class Program
         services.AddScoped<TelegramUpdateProcessor>();
         services.AddScoped<TelegramMessageClassifier>();
         services.AddScoped<IMessageRouter, MessageRouter>();
-        services.AddScoped<ITelegramMessageHandler, CommandMessageHandler>();
-        services.AddScoped<ITelegramMessageHandler, PhotoMessageHandler>();
-        services.AddScoped<ITelegramMessageHandler, FallbackMessageHandler>();
+        services.AddScoped<CommandMessageHandler>();
+        services.AddScoped<PhotoMessageHandler>();
+        services.AddScoped<FallbackMessageHandler>();
         services.AddScoped<PhotoStorageService>(sp =>
             new PhotoStorageService(
                 logsDirectory,

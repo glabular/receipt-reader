@@ -1,16 +1,17 @@
 using ReceiptReader.Services.Messaging.Handlers;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ReceiptReader.Services.Messaging;
 
 internal sealed class MessageRouter : IMessageRouter
 {
-    private readonly IReadOnlyList<ITelegramMessageHandler> _handlers;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MessageRouter> _logger;
 
-    public MessageRouter(IEnumerable<ITelegramMessageHandler> handlers, ILogger<MessageRouter> logger)
+    public MessageRouter(IServiceProvider serviceProvider, ILogger<MessageRouter> logger)
     {
-        _handlers = handlers.ToList();
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -18,18 +19,26 @@ internal sealed class MessageRouter : IMessageRouter
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var handler = _handlers.FirstOrDefault(h => h.CanHandle(context));
-
-        if (handler is null)
+        ITelegramMessageHandler handler = context.MessageType switch
         {
-            _logger.LogError(
-                "No handler found for message type {MessageType}, message ID {MessageId}",
-                context.MessageType,
-                context.Message.MessageId);
-
-            throw new InvalidOperationException($"No handler registered for message type '{context.MessageType}'.");
-        }
+            Enums.MessageType.Command => _serviceProvider.GetRequiredService<CommandMessageHandler>(),
+            Enums.MessageType.Photo => _serviceProvider.GetRequiredService<PhotoMessageHandler>(),
+            _ => ResolveFallbackWithWarning(context)
+        };
 
         await handler.HandleAsync(context, cancellationToken);
+    }
+
+    private FallbackMessageHandler ResolveFallbackWithWarning(TelegramMessageContext context)
+    {
+        if (context.MessageType is Enums.MessageType.Album)
+        {
+            _logger.LogWarning(
+                "No dedicated handler for message type {MessageType}, using fallback. Message ID {MessageId}",
+                context.MessageType,
+                context.Message.MessageId);
+        }
+
+        return _serviceProvider.GetRequiredService<FallbackMessageHandler>();
     }
 }
