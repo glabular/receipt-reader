@@ -240,7 +240,7 @@ internal sealed class TelegramClient : IAsyncDisposable
 
         await _bot.SendMessage(chatId, "📄 Your receipt is being processed. This may take a few moments.");
 
-        var invoice = receiptClient.GetInvoice(url);
+        var invoice = await receiptClient.GetInvoiceAsync(url);
 
         if (invoice is null)
         {

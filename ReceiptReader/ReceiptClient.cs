@@ -5,7 +5,8 @@ namespace ReceiptReader;
 
 internal sealed class ReceiptClient : IDisposable
 {
-    // TODO: Think on adding a global semaphore (e.g. max 1–2 concurrent browsers)
+    private const int MaxConcurrentBrowsers = 2;
+    private static readonly SemaphoreSlim BrowserSemaphore = new(MaxConcurrentBrowsers, MaxConcurrentBrowsers);
     private readonly BrowserEngine _browser;
 
     public ReceiptClient(TimeSpan? browserTimeout = null)
@@ -13,11 +14,20 @@ internal sealed class ReceiptClient : IDisposable
         _browser = new BrowserEngine(browserTimeout);
     }
 
-    public Invoice? GetInvoice(string url)
+    public async Task<Invoice?> GetInvoiceAsync(string url, CancellationToken cancellationToken = default)
     {
-        var pageSource = _browser.GetPageSource(url);
+        await BrowserSemaphore.WaitAsync(cancellationToken);
 
-        return InvoiceParser.ParseInvoicePage(url, pageSource);
+        try
+        {
+            var pageSource = _browser.GetPageSource(url);
+
+            return InvoiceParser.ParseInvoicePage(url, pageSource);
+        }
+        finally
+        {
+            BrowserSemaphore.Release();
+        }
     }
 
     public void Dispose() => _browser.Dispose();
