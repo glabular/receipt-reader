@@ -75,8 +75,17 @@ internal class Program
                 sp.GetRequiredService<ILogger<TelegramClient>>()
             ));
 
-        await using var serviceProvider = services.BuildServiceProvider();
-        var telegramClient = serviceProvider.GetRequiredService<TelegramClient>();
+        var dotnetEnvironment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+        var isDevelopment = string.Equals(dotnetEnvironment, "Development", StringComparison.OrdinalIgnoreCase);
+
+        await using var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = isDevelopment,
+            ValidateOnBuild = isDevelopment
+        });
+
+        await using var startupScope = serviceProvider.CreateAsyncScope();
+        var telegramClient = startupScope.ServiceProvider.GetRequiredService<TelegramClient>();
 
         try
         {
