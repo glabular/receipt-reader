@@ -6,11 +6,16 @@ namespace ReceiptReader.Services;
 internal sealed class CommandsHandler
 {
     private readonly InvoiceService _invoiceService;
+    private readonly UserService _userService;
     private readonly ILogger<CommandsHandler> _logger;
 
-    public CommandsHandler(InvoiceService invoiceService, ILogger<CommandsHandler> logger)
+    public CommandsHandler(
+        InvoiceService invoiceService,
+        UserService userService,
+        ILogger<CommandsHandler> logger)
     {
         _invoiceService = invoiceService;
+        _userService = userService;
         _logger = logger;
     }
 
@@ -18,6 +23,7 @@ internal sealed class CommandsHandler
     {
         var command = request.Text?.Trim().Split(' ')[0].ToLowerInvariant();
         _logger.LogInformation("Received command {Command} from user {TelegramUserId}", command, request.TelegramUserId);
+        await _userService.ClearPendingCommandAsync(request.TelegramUserId);
 
         switch (command)
         {
@@ -29,6 +35,9 @@ internal sealed class CommandsHandler
 
             case "/spent_month":
                 return await HandleSpentMonthAsync(request, cancellationToken);
+
+            case "/spent_month_select":
+                return await HandleSpentMonthSelectAsync(request, cancellationToken);
 
             case "/spent_year":
                 return await HandleSpentYearAsync(request, cancellationToken);
@@ -45,6 +54,7 @@ internal sealed class CommandsHandler
                "/start – Introduction\n" +
                "/help – Show available commands\n" +
                "/spent_month – View total spending for the current month\n" +
+               "/spent_month_select – Select month interactively (MM or MM YYYY)\n" +
                "/spent_year – View total spending for the current year\n" +
                "Or use the Menu button\n\n" +
                "To analyze a receipt, send a clear photo with a visible QR code.";
@@ -104,6 +114,22 @@ internal sealed class CommandsHandler
         }
 
         return new CommandResult { Messages = messages };
+    }
+
+    private async Task<CommandResult> HandleSpentMonthSelectAsync(
+        CommandRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _userService.SetPendingCommandAsync(request.TelegramUserId, UserService.SpentMonthSelectPendingCommand);
+        _logger.LogInformation(
+            "User {UserId} started conversational /spent_month_select flow",
+            request.TelegramUserId);
+
+        return BuildSingleMessageResult(
+            "Enter month to check spending:\n" +
+            "- MM (uses current year)\n" +
+            "- MM YYYY (specific year)\n\n" +
+            "Examples: 03 or 03 2026");
     }
 
     private static CommandResult BuildSingleMessageResult(string message)

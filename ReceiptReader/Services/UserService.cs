@@ -2,11 +2,15 @@
 using ReceiptReader.Models;
 using Telegram.Bot.Types;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 
 namespace ReceiptReader.Services;
 
 internal class UserService
 {
+    internal const string SpentMonthSelectPendingCommand = "spent_month_select";
+    private static readonly ConcurrentDictionary<long, string> PendingCommands = new();
+
     private readonly BotDbContext _dbContext;
 
     public UserService(BotDbContext dbContext)
@@ -41,5 +45,23 @@ internal class UserService
         await _dbContext.SaveChangesAsync();
 
         return user;
+    }
+
+    public async Task SetPendingCommandAsync(long telegramUserId, string command)
+    {
+        PendingCommands[telegramUserId] = command;
+        await Task.CompletedTask;
+    }
+
+    public async Task<string?> GetPendingCommandAsync(long telegramUserId)
+    {
+        PendingCommands.TryGetValue(telegramUserId, out var pendingCommand);
+        return await Task.FromResult(pendingCommand);
+    }
+
+    public async Task ClearPendingCommandAsync(long telegramUserId)
+    {
+        PendingCommands.TryRemove(telegramUserId, out _);
+        await Task.CompletedTask;
     }
 }
