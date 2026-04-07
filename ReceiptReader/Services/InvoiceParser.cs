@@ -1,6 +1,7 @@
 ﻿using HtmlAgilityPack;
 using ReceiptReader.Models;
 using System.Globalization;
+using HtmlDocument = HtmlAgilityPack.HtmlDocument;
 
 namespace ReceiptReader.Services;
 

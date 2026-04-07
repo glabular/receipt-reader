@@ -3,6 +3,7 @@ using ReceiptReader.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TelegramMessage = Telegram.Bot.Types.Message;
 
 namespace ReceiptReader.Services.Messaging;
 
@@ -25,7 +26,7 @@ internal sealed class TelegramUpdateProcessor
         _logger = logger;
     }
 
-    public async Task ProcessAsync(TelegramBotClient bot, Message message, UpdateType updateType, CancellationToken cancellationToken = default)
+    public async Task ProcessAsync(TelegramBotClient bot, TelegramMessage message, UpdateType updateType, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Received {UpdateType} in {ChatId}", updateType, message.Chat);
 

@@ -10,12 +10,15 @@ using ReceiptReader.Services.Photos;
 using ReceiptReader.Services;
 using Serilog;
 using Serilog.Events;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace ReceiptReader;
 
 internal class Program
 {
-    static async Task Main()
+    [STAThread]
+    static void Main()
     {
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
@@ -32,7 +35,6 @@ internal class Program
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
-            .WriteTo.Console()
             .WriteTo.File(logsFilePath,
                 rollingInterval: RollingInterval.Day,
                 rollOnFileSizeLimit: true)
@@ -97,18 +99,20 @@ internal class Program
         var dotnetEnvironment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
         var isDevelopment = string.Equals(dotnetEnvironment, "Development", StringComparison.OrdinalIgnoreCase);
 
-        await using var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = isDevelopment,
-            ValidateOnBuild = isDevelopment
-        });
-
-        var telegramClient = serviceProvider.GetRequiredService<TelegramClient>();
-
+        ServiceProvider? serviceProvider = null;
         try
         {
-            await telegramClient.StartAsync();
-            Console.ReadLine();
+            serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = isDevelopment,
+                ValidateOnBuild = isDevelopment
+            });
+
+            var telegramClient = serviceProvider.GetRequiredService<TelegramClient>();
+            telegramClient.StartAsync().GetAwaiter().GetResult();
+
+            ApplicationConfiguration.Initialize();
+            Application.Run(new TrayApplicationContext(serviceProvider, "ReceiptReader"));
         }
         catch (Exception ex)
         {
@@ -116,7 +120,47 @@ internal class Program
         }
         finally
         {
+            if (serviceProvider is IAsyncDisposable asyncDisposable)
+            {
+                asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
+            else if (serviceProvider is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
             Log.CloseAndFlush();
+        }
+    }
+
+    private sealed class TrayApplicationContext : ApplicationContext
+    {
+        private readonly IServiceProvider _serviceProvider;
+        private readonly NotifyIcon _notifyIcon;
+
+        public TrayApplicationContext(IServiceProvider serviceProvider, string appName)
+        {
+            _serviceProvider = serviceProvider;
+
+            var trayMenu = new ContextMenuStrip();
+            trayMenu.Items.Add(new ToolStripMenuItem(appName) { Enabled = false });
+            trayMenu.Items.Add(new ToolStripSeparator());
+            trayMenu.Items.Add("Exit", null, (_, _) => ExitThread());
+
+            _notifyIcon = new NotifyIcon
+            {
+                Icon = SystemIcons.Application,
+                Text = appName,
+                ContextMenuStrip = trayMenu,
+                Visible = true
+            };
+        }
+
+        protected override void ExitThreadCore()
+        {
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+            base.ExitThreadCore();
         }
     }
 }

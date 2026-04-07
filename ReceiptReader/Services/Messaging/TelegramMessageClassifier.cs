@@ -1,10 +1,11 @@
 using Telegram.Bot.Types;
+using TelegramMessage = Telegram.Bot.Types.Message;
 
 namespace ReceiptReader.Services.Messaging;
 
 internal sealed class TelegramMessageClassifier
 {
-    public Enums.MessageType Classify(Message message)
+    public Enums.MessageType Classify(TelegramMessage message)
     {
         if (message.MediaGroupId is not null)
         {

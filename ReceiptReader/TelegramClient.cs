@@ -4,6 +4,7 @@ using ReceiptReader.Services.Messaging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TelegramMessage = Telegram.Bot.Types.Message;
 
 namespace ReceiptReader;
 
@@ -39,7 +40,7 @@ internal sealed class TelegramClient : IAsyncDisposable
         _bot.OnMessage += OnMessage;
     }
 
-    private async Task OnMessage(Message msg, UpdateType type)
+    private async Task OnMessage(TelegramMessage msg, UpdateType type)
     {
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
