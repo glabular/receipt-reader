@@ -5,6 +5,7 @@ namespace ReceiptReader.Services;
 internal class WeChatQrReader : IDisposable
 {
     private readonly WeChatQRCode _detector;
+    private readonly object _lock = new object();
 
     public WeChatQrReader()
     {
@@ -21,15 +22,19 @@ internal class WeChatQrReader : IDisposable
     public string? ReadQr(string imagePath)
     {
         using var mat = Cv2.ImRead(imagePath);
+
         if (mat.Empty())
         {
             throw new Exception("Could not load image.");
         }
 
-        _detector.DetectAndDecode(mat, out Mat[] points, out string[] results);
+        lock (_lock)
+        {
+            _detector.DetectAndDecode(mat, out Mat[] points, out string[] results);
 
-        // TODO: Return all detected QR codes instead of just the first one.
-        return results.Length > 0 ? results[0] : null;
+            // TODO: Return all detected QR codes instead of just the first one.
+            return results.Length > 0 ? results[0] : null;
+        }
     }
 
     public void Dispose()

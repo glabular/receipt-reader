@@ -64,7 +64,7 @@ internal class Program
         services.AddScoped<InvoiceService>();
         services.AddScoped<UserService>();
         services.AddScoped<ReceiptClient>();
-        services.AddScoped<WeChatQrReader>();
+        services.AddSingleton<WeChatQrReader>();
         services.AddScoped<CommandsHandler>();
         services.AddScoped<TelegramClient>(sp =>
             new TelegramClient(
