@@ -66,6 +66,7 @@ internal class Program
             options.UseSqlServer(connectionString));
 
         services.AddScoped<InvoiceService>();
+        services.AddScoped<SpendingSummaryFormatter>();
         services.AddScoped<UserService>();
         services.AddScoped<ReceiptClient>();
         services.AddSingleton<WeChatQrReader>();

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
-using System.Text;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
 namespace ReceiptReader.Services.Messaging.Handlers;
 
@@ -8,15 +8,18 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
 {
     private readonly UserService _userService;
     private readonly InvoiceService _invoiceService;
+    private readonly SpendingSummaryFormatter _spendingSummaryFormatter;
     private readonly ILogger<FallbackMessageHandler> _logger;
 
     public FallbackMessageHandler(
         UserService userService,
         InvoiceService invoiceService,
+        SpendingSummaryFormatter spendingSummaryFormatter,
         ILogger<FallbackMessageHandler> logger)
     {
         _userService = userService;
         _invoiceService = invoiceService;
+        _spendingSummaryFormatter = spendingSummaryFormatter;
         _logger = logger;
     }
 
@@ -95,11 +98,12 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
             var topItems = await _invoiceService.GetTopSpentItemsByMonthAsync(userId, month, year, topCount: 5);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
-                BuildSpendingSummaryMessage(
+                _spendingSummaryFormatter.Build(
                     periodLabel: $"month ({month:D2}/{year})",
                     totalSpent: totalSpent.Value,
                     topItems: topItems,
                     topItemsTitle: "Top 5 most bought items"),
+                parseMode: ParseMode.Html,
                 cancellationToken: cancellationToken);
         }
         catch (Exception ex)
@@ -177,11 +181,12 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
             var topItems = await _invoiceService.GetTopSpentItemsByYearAsync(userId, year, topCount: 10);
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
-                BuildSpendingSummaryMessage(
+                _spendingSummaryFormatter.Build(
                     periodLabel: $"year ({year})",
                     totalSpent: totalSpent.Value,
                     topItems: topItems,
                     topItemsTitle: "Top 10 most bought items"),
+                parseMode: ParseMode.Html,
                 cancellationToken: cancellationToken);
         }
         catch (Exception ex)
@@ -203,43 +208,5 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
         }
 
         return year is >= 2000 and <= 2100;
-    }
-
-    private static string BuildSpendingSummaryMessage(
-        string periodLabel,
-        decimal totalSpent,
-        IReadOnlyList<InvoiceService.ItemSpendingStat> topItems,
-        string topItemsTitle)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine($"💸 Your total spending for this {periodLabel} is: {totalSpent:F2} EUR");
-
-        if (topItems.Count == 0)
-        {
-            sb.AppendLine("🧾 No item statistics available for this period.");
-            return sb.ToString().TrimEnd();
-        }
-
-        sb.AppendLine();
-        sb.AppendLine($"📊 {topItemsTitle}:");
-        for (var i = 0; i < topItems.Count; i++)
-        {
-            var item = topItems[i];
-            sb.AppendLine($"{i + 1}. {FormatProductName(item.ProductName)} — {item.TotalSpent:F2} EUR");
-        }
-
-        return sb.ToString().TrimEnd();
-    }
-
-    private static string FormatProductName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return "Unknown";
-        }
-
-        return name.Length == 1
-            ? char.ToUpper(name[0]).ToString()
-            : char.ToUpper(name[0]) + name[1..].ToLower();
     }
 }

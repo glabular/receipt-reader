@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ReceiptReader.Services.Messaging.Commands;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
 namespace ReceiptReader.Services.Messaging.Handlers;
 
@@ -58,7 +59,21 @@ internal sealed class CommandMessageHandler : ITelegramMessageHandler
 
         foreach (var message in result.Messages)
         {
-            await context.Bot.SendMessage(context.Message.Chat.Id, message, cancellationToken: cancellationToken);
+            if (message.Contains("<b>", StringComparison.Ordinal))
+            {
+                await context.Bot.SendMessage(
+                    context.Message.Chat.Id,
+                    message,
+                    parseMode: ParseMode.Html,
+                    cancellationToken: cancellationToken);
+            }
+            else
+            {
+                await context.Bot.SendMessage(
+                    context.Message.Chat.Id,
+                    message,
+                    cancellationToken: cancellationToken);
+            }
         }
     }
 }
