@@ -159,7 +159,7 @@ internal class Program
             var trayMenu = new ContextMenuStrip();
             trayMenu.Items.Add(new ToolStripMenuItem(appName) { Enabled = false });
             trayMenu.Items.Add(new ToolStripSeparator());
-            trayMenu.Items.Add("Exit", null, (_, _) => ExitThread());
+            trayMenu.Items.Add("Exit", null, (_, _) => RequestExit());
 
             _notifyIcon = new NotifyIcon
             {
@@ -180,8 +180,17 @@ internal class Program
             _logViewerForm.Activate();
         }
 
+        private void RequestExit()
+        {
+            Log.Information("Application exit requested from system tray.");
+            ExitThread();
+        }
+
         protected override void ExitThreadCore()
         {
+            Log.Information("Application shut down safely.");
+            Log.CloseAndFlush();
+
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
             _logViewerForm.PrepareForApplicationExit();

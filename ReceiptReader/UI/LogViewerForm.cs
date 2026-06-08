@@ -1,4 +1,5 @@
 using ReceiptReader.Logging;
+using Serilog;
 
 namespace ReceiptReader.UI;
 
@@ -73,6 +74,7 @@ internal sealed class LogViewerForm : Form
 
     private void HideToTray()
     {
+        Log.Information("Log viewer closed; application continues running in system tray.");
         ShowInTaskbar = false;
         Hide();
     }
