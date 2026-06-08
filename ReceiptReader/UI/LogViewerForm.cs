@@ -8,6 +8,7 @@ internal sealed class LogViewerForm : Form
     private const int MaxTextLength = 2_000_000;
 
     private readonly LogRingBuffer _buffer;
+    private readonly string _appName;
     private readonly TextBox _logTextBox;
     private Action<string>? _lineAppendedHandler;
 
@@ -16,6 +17,7 @@ internal sealed class LogViewerForm : Form
     public LogViewerForm(LogRingBuffer buffer, string appName)
     {
         _buffer = buffer;
+        _appName = appName;
 
         Text = $"{appName} — Logs";
         Size = new Size(1200, 600);
@@ -36,7 +38,7 @@ internal sealed class LogViewerForm : Form
         Controls.Add(_logTextBox);
 
         Resize += OnResizeHideToTray;
-        FormClosing += OnFormClosingHideToTray;
+        FormClosing += OnFormClosing;
         VisibleChanged += OnVisibleChanged;
     }
 
@@ -61,20 +63,37 @@ internal sealed class LogViewerForm : Form
         }
     }
 
-    private void OnFormClosingHideToTray(object? sender, FormClosingEventArgs e)
+    private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
         if (_applicationExiting)
         {
             return;
         }
 
-        e.Cancel = true;
-        HideToTray();
+        if (e.CloseReason != CloseReason.UserClosing)
+        {
+            return;
+        }
+
+        var confirmExit = MessageBox.Show(
+            $"Exit {_appName}?",
+            "Confirm Exit",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirmExit != DialogResult.Yes)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        Log.Information("Application exit requested from log viewer.");
+        PrepareForApplicationExit();
     }
 
     private void HideToTray()
     {
-        Log.Information("Log viewer closed; application continues running in system tray.");
+        Log.Information("Log viewer minimized to system tray.");
         ShowInTaskbar = false;
         Hide();
     }
