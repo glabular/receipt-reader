@@ -7,7 +7,9 @@ using ReceiptReader.Services.Invoices;
 using ReceiptReader.Services.Messaging;
 using ReceiptReader.Services.Messaging.Handlers;
 using ReceiptReader.Services.Photos;
+using ReceiptReader.Logging;
 using ReceiptReader.Services;
+using ReceiptReader.UI;
 using Serilog;
 using Serilog.Events;
 using System.Drawing;
@@ -17,6 +19,11 @@ namespace ReceiptReader;
 
 internal class Program
 {
+    private const string LogOutputTemplate =
+        "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+
+    private const int LogRingBufferCapacity = 5000;
+
     [STAThread]
     static void Main()
     {
@@ -30,6 +37,8 @@ internal class Program
         var logsDirectory = LogsDirectoryResolver.Resolve(config);
         Directory.CreateDirectory(logsDirectory);
         var logsFilePath = Path.Combine(logsDirectory, "log_.txt");
+        var logRingBuffer = new LogRingBuffer(LogRingBufferCapacity);
+        var winFormsLogSink = new WinFormsLogSink(logRingBuffer, LogOutputTemplate);
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
@@ -37,7 +46,9 @@ internal class Program
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .WriteTo.File(logsFilePath,
                 rollingInterval: RollingInterval.Day,
-                rollOnFileSizeLimit: true)
+                rollOnFileSizeLimit: true,
+                outputTemplate: LogOutputTemplate)
+            .WriteTo.Sink(winFormsLogSink)
             .CreateLogger();
 
         var telegramToken = config["TelegramBotToken"];
@@ -112,7 +123,7 @@ internal class Program
             telegramClient.StartAsync().GetAwaiter().GetResult();
 
             ApplicationConfiguration.Initialize();
-            Application.Run(new TrayApplicationContext(serviceProvider, "ReceiptReader"));
+            Application.Run(new TrayApplicationContext(serviceProvider, logRingBuffer, "ReceiptReader"));
         }
         catch (Exception ex)
         {
@@ -135,12 +146,15 @@ internal class Program
 
     private sealed class TrayApplicationContext : ApplicationContext
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly NotifyIcon _notifyIcon;
+        private readonly LogViewerForm _logViewerForm;
 
-        public TrayApplicationContext(IServiceProvider serviceProvider, string appName)
+        public TrayApplicationContext(IServiceProvider serviceProvider, LogRingBuffer logRingBuffer, string appName)
         {
-            _serviceProvider = serviceProvider;
+            _ = serviceProvider;
+
+            _logViewerForm = new LogViewerForm(logRingBuffer, appName);
+            MainForm = _logViewerForm;
 
             var trayMenu = new ContextMenuStrip();
             trayMenu.Items.Add(new ToolStripMenuItem(appName) { Enabled = false });
@@ -154,12 +168,24 @@ internal class Program
                 ContextMenuStrip = trayMenu,
                 Visible = true
             };
+
+            _notifyIcon.DoubleClick += (_, _) => ShowLogViewer();
+        }
+
+        private void ShowLogViewer()
+        {
+            _logViewerForm.Show();
+            _logViewerForm.WindowState = FormWindowState.Normal;
+            _logViewerForm.ShowInTaskbar = true;
+            _logViewerForm.Activate();
         }
 
         protected override void ExitThreadCore()
         {
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
+            _logViewerForm.PrepareForApplicationExit();
+            _logViewerForm.Close();
             base.ExitThreadCore();
         }
     }
