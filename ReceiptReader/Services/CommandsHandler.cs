@@ -182,7 +182,8 @@ internal sealed class CommandsHandler
             request.TelegramUserId);
 
         return BuildSingleMessageResult(
-            "Enter month to check spending:\n" +
+            "Which month should I check?\n\n" +
+            "Reply with either MM or MM YYYY.\n" + 
             "- MM (uses current year)\n" +
             "- MM YYYY (specific year)\n\n" +
             "Examples: 03 or 03 2026");
@@ -198,8 +199,8 @@ internal sealed class CommandsHandler
             request.TelegramUserId);
 
         return BuildSingleMessageResult(
-            "Enter year to check spending:\n" +
-            "- YYYY\n\n" +
+            "Which year should I check?\n\n" +
+            "Reply with YYYY.\n\n" +
             "Example: 2026");
     }
 
