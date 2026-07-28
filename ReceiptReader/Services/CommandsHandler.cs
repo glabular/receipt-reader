@@ -6,20 +6,17 @@ namespace ReceiptReader.Services;
 internal sealed class CommandsHandler
 {
     private readonly InvoiceService _invoiceService;
-    private readonly UserService _userService;
     private readonly SpendingSummaryFormatter _spendingSummaryFormatter;
     private readonly SpendingAccessResolver _spendingAccessResolver;
     private readonly ILogger<CommandsHandler> _logger;
 
     public CommandsHandler(
         InvoiceService invoiceService,
-        UserService userService,
         SpendingSummaryFormatter spendingSummaryFormatter,
         SpendingAccessResolver spendingAccessResolver,
         ILogger<CommandsHandler> logger)
     {
         _invoiceService = invoiceService;
-        _userService = userService;
         _spendingSummaryFormatter = spendingSummaryFormatter;
         _spendingAccessResolver = spendingAccessResolver;
         _logger = logger;
@@ -27,9 +24,8 @@ internal sealed class CommandsHandler
 
     public async Task<CommandResult> HandleAsync(CommandRequest request, CancellationToken cancellationToken = default)
     {
-        var command = request.Text?.Trim().Split(' ')[0].ToLowerInvariant();
+        var (command, args) = ParseCommandAndArguments(request.Text);
         _logger.LogInformation("Received command {Command} from user {TelegramUserId}", command, request.TelegramUserId);
-        await _userService.ClearPendingCommandAsync(request.TelegramUserId);
 
         switch (command)
         {
@@ -40,16 +36,10 @@ internal sealed class CommandsHandler
                 return BuildSingleMessageResult(GetHelpText());
 
             case "/spent_month":
-                return await HandleSpentMonthAsync(request, cancellationToken);
-
-            case "/spent_month_select":
-                return await HandleSpentMonthSelectAsync(request, cancellationToken);
+                return await HandleSpentMonthAsync(request, args, cancellationToken);
 
             case "/spent_year":
-                return await HandleSpentYearAsync(request, cancellationToken);
-
-            case "/spent_year_select":
-                return await HandleSpentYearSelectAsync(request, cancellationToken);
+                return await HandleSpentYearAsync(request, args, cancellationToken);
 
             default:
                 _logger.LogWarning("Unknown command received: {Command} from {UserId}", command, request.TelegramUserId);
@@ -62,10 +52,8 @@ internal sealed class CommandsHandler
         return "Available commands:\n\n" +
                "/start – Introduction\n" +
                "/help – Show available commands\n" +
-               "/spent_month – View total spending for the current month\n" +
-               "/spent_month_select – Select month interactively (MM or MM YYYY)\n" +
-               "/spent_year – View total spending for the current year\n" +
-               "/spent_year_select – Select year interactively (YYYY)\n" +
+               "/spent_month – View spending for current month or use M[ M] YY|YYYY\n" +
+               "/spent_year – View spending for current year or use YY|YYYY\n" +
                "Or use the Menu button\n\n" +
                "To analyze a receipt, send a clear photo with a visible QR code.";
     }
@@ -77,12 +65,31 @@ internal sealed class CommandsHandler
                "I will extract the items and calculate the total amount.";
     }
 
-    private async Task<CommandResult> HandleSpentMonthAsync(CommandRequest request, CancellationToken cancellationToken)
+    private async Task<CommandResult> HandleSpentMonthAsync(
+        CommandRequest request,
+        string arguments,
+        CancellationToken cancellationToken)
     {
+        int month;
+        int year;
+        if (string.IsNullOrWhiteSpace(arguments))
+        {
+            month = DateTime.UtcNow.Month;
+            year = DateTime.UtcNow.Year;
+        }
+        else if (!TryParseMonthArguments(arguments, out month, out year))
+        {
+            return BuildSingleMessageResult(
+                "Invalid /spent_month arguments.\n" +
+                "Use:\n" +
+                "- /spent_month\n" +
+                "- /spent_month M\n" +
+                "- /spent_month MM\n" +
+                "- /spent_month M YY\n" +
+                "- /spent_month MM YYYY");
+        }
         var requesterUserId = request.TelegramUserId;
         var ownerUserId = _spendingAccessResolver.ResolveOwnerTelegramUserId(requesterUserId);
-        var month = DateTime.UtcNow.Month;
-        var year = DateTime.UtcNow.Year;
         var messages = new List<string>();
         var totalSpent = await _invoiceService.GetMonthlyTotalAsync(ownerUserId, month, year);
 
@@ -93,7 +100,7 @@ internal sealed class CommandsHandler
                 requesterUserId,
                 ownerUserId,
                 month);
-            messages.Add("📭 No receipts found for this month yet.");
+            messages.Add($"📭 No receipts found for {month:D2}/{year}.");
         }
         else
         {
@@ -118,18 +125,35 @@ internal sealed class CommandsHandler
                     "Failed to load monthly top item stats for requester {RequesterUserId} using owner {OwnerUserId}",
                     requesterUserId,
                     ownerUserId);
-                messages.Add($"💸 Your total spending for this month ({month:D2}/{year}) is: {totalSpent.Value:F2} EUR");
+                messages.Add($"💸 Your total spending for month ({month:D2}/{year}) is: {totalSpent.Value:F2} EUR");
             }
         }
 
         return new CommandResult { Messages = messages };
     }
 
-    private async Task<CommandResult> HandleSpentYearAsync(CommandRequest request, CancellationToken cancellationToken)
+    private async Task<CommandResult> HandleSpentYearAsync(
+        CommandRequest request,
+        string arguments,
+        CancellationToken cancellationToken)
     {
+        int year;
+        if (string.IsNullOrWhiteSpace(arguments))
+        {
+            year = DateTime.UtcNow.Year;
+        }
+        else if (!TryParseYearArguments(arguments, out year))
+        {
+            return BuildSingleMessageResult(
+                "Invalid /spent_year arguments.\n" +
+                "Use:\n" +
+                "- /spent_year\n" +
+                "- /spent_year YY\n" +
+                "- /spent_year YYYY");
+        }
+
         var requesterUserId = request.TelegramUserId;
         var ownerUserId = _spendingAccessResolver.ResolveOwnerTelegramUserId(requesterUserId);
-        var year = DateTime.UtcNow.Year;
         var messages = new List<string>();
         var totalSpent = await _invoiceService.GetYearlyTotalAsync(ownerUserId, year);
 
@@ -140,7 +164,7 @@ internal sealed class CommandsHandler
                 requesterUserId,
                 ownerUserId,
                 year);
-            messages.Add("📭 No receipts found for this year yet.");
+            messages.Add($"📭 No receipts found for {year}.");
         }
         else
         {
@@ -165,43 +189,94 @@ internal sealed class CommandsHandler
                     "Failed to load yearly top item stats for requester {RequesterUserId} using owner {OwnerUserId}",
                     requesterUserId,
                     ownerUserId);
-                messages.Add($"💸 Your total spending for this year ({year}) is: {totalSpent.Value:F2} EUR");
+                messages.Add($"💸 Your total spending for year ({year}) is: {totalSpent.Value:F2} EUR");
             }
         }
 
         return new CommandResult { Messages = messages };
     }
 
-    private async Task<CommandResult> HandleSpentMonthSelectAsync(
-        CommandRequest request,
-        CancellationToken cancellationToken)
+    private static (string command, string arguments) ParseCommandAndArguments(string? text)
     {
-        await _userService.SetPendingCommandAsync(request.TelegramUserId, UserService.SpentMonthSelectPendingCommand);
-        _logger.LogInformation(
-            "User {UserId} started conversational /spent_month_select flow",
-            request.TelegramUserId);
+        var trimmedText = text?.Trim() ?? string.Empty;
+        if (trimmedText.Length == 0)
+        {
+            return (string.Empty, string.Empty);
+        }
 
-        return BuildSingleMessageResult(
-            "Which month should I check?\n\n" +
-            "Reply with either MM or MM YYYY.\n" + 
-            "- MM (uses current year)\n" +
-            "- MM YYYY (specific year)\n\n" +
-            "Examples: 03 or 03 2026");
+        var splitIndex = trimmedText.IndexOf(' ');
+        if (splitIndex < 0)
+        {
+            return (NormalizeCommandToken(trimmedText), string.Empty);
+        }
+
+        var command = NormalizeCommandToken(trimmedText[..splitIndex]);
+        var arguments = trimmedText[(splitIndex + 1)..].Trim();
+        return (command, arguments);
     }
 
-    private async Task<CommandResult> HandleSpentYearSelectAsync(
-        CommandRequest request,
-        CancellationToken cancellationToken)
+    private static string NormalizeCommandToken(string token)
     {
-        await _userService.SetPendingCommandAsync(request.TelegramUserId, UserService.SpentYearSelectPendingCommand);
-        _logger.LogInformation(
-            "User {UserId} started conversational /spent_year_select flow",
-            request.TelegramUserId);
+        var commandOnly = token.Split('@')[0];
+        return commandOnly.ToLowerInvariant();
+    }
 
-        return BuildSingleMessageResult(
-            "Which year should I check?\n\n" +
-            "Reply with YYYY.\n\n" +
-            "Example: 2026");
+    private static bool TryParseMonthArguments(string arguments, out int month, out int year)
+    {
+        month = default;
+        year = default;
+
+        var parts = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length is < 1 or > 2)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(parts[0], out month) || month is < 1 or > 12)
+        {
+            return false;
+        }
+
+        if (parts.Length == 1)
+        {
+            year = DateTime.UtcNow.Year;
+            return true;
+        }
+
+        return TryParseYearToken(parts[1], out year);
+    }
+
+    private static bool TryParseYearArguments(string arguments, out int year)
+    {
+        year = default;
+        var parts = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 1 && TryParseYearToken(parts[0], out year);
+    }
+
+    private static bool TryParseYearToken(string token, out int year)
+    {
+        year = default;
+        if (!int.TryParse(token, out var parsedYear))
+        {
+            return false;
+        }
+
+        if (token.Length == 2)
+        {
+            parsedYear += 2000;
+        }
+        else if (token.Length != 4)
+        {
+            return false;
+        }
+
+        if (parsedYear is < 2000 or > 2100)
+        {
+            return false;
+        }
+
+        year = parsedYear;
+        return true;
     }
 
     private static CommandResult BuildSingleMessageResult(string message)

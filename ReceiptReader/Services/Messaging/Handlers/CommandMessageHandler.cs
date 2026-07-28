@@ -40,18 +40,11 @@ internal sealed class CommandMessageHandler : ITelegramMessageHandler
         };
 
         var command = request.Text?.Trim().Split(' ')[0].ToLowerInvariant();
-        if (command == "/spent_month")
+        if (command == "/spent_month" || command == "/spent_year")
         {
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
-                "Calculating your total spending for this month...",
-                cancellationToken: cancellationToken);
-        }
-        else if (command == "/spent_year")
-        {
-            await context.Bot.SendMessage(
-                context.Message.Chat.Id,
-                "Calculating your total spending for this year...",
+                "Calculating your spending summary...",
                 cancellationToken: cancellationToken);
         }
 
