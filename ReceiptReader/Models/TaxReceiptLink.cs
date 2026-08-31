@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace ReceiptReader.Models;
 
 /// <summary>
@@ -46,10 +49,62 @@ internal sealed class TaxReceiptLink
     public string? SoftwareCode { get; init; }
 
     /// <summary>
-    /// Builds the InvoiceCheck verify URL for these parameters.
+    /// Composes the InvoiceCheck URL for these parameters.
     /// </summary>
     public string ComposeUrl()
     {
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        sb.Append("https://mapr.tax.gov.me/ic/#/verify?");
+
+        AppendQueryParam(sb, "iic", InvoiceIdentificationCode);
+        AppendQueryParam(sb, "tin", TaxpayerIdentificationNumber);
+        AppendQueryParam(
+            sb,
+            "crtd",
+            Created.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture),
+            encode: false);
+
+        if (OrdinalNumber is int ordinal)
+        {
+            AppendQueryParam(sb, "ord", ordinal.ToString(CultureInfo.InvariantCulture));
+        }
+
+        if (!string.IsNullOrWhiteSpace(BusinessUnitCode))
+        {
+            AppendQueryParam(sb, "bu", BusinessUnitCode);
+        }
+
+        if (!string.IsNullOrWhiteSpace(CashRegisterCode))
+        {
+            AppendQueryParam(sb, "cr", CashRegisterCode);
+        }
+
+        if (!string.IsNullOrWhiteSpace(SoftwareCode))
+        {
+            AppendQueryParam(sb, "sw", SoftwareCode);
+        }
+
+        AppendQueryParam(
+            sb,
+            "prc",
+            TotalPrice.ToString("0.00", CultureInfo.InvariantCulture));
+
+        return sb.ToString();
+    }
+
+    private static void AppendQueryParam(
+        StringBuilder sb,
+        string key,
+        string value,
+        bool encode = true)
+    {
+        if (sb[^1] != '?')
+        {
+            sb.Append('&');
+        }
+
+        sb.Append(key);
+        sb.Append('=');
+        sb.Append(encode ? Uri.EscapeDataString(value) : value);
     }
 }
