@@ -54,7 +54,7 @@ internal sealed class TaxReceiptLink
     public string ComposeUrl()
     {
         var sb = new StringBuilder();
-        sb.Append("https://mapr.tax.gov.me/ic/#/verify?");
+        sb.Append(InvoiceCheckUrlParts.ComposeBase);
 
         AppendQueryParam(sb, "iic", InvoiceIdentificationCode);
         AppendQueryParam(sb, "tin", TaxpayerIdentificationNumber);

@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+﻿using ReceiptReader.Models;
 
 namespace ReceiptReader.Services;
 
@@ -16,26 +16,22 @@ internal sealed class UrlValidator
             return false;
         }
 
-        // Enforce HTTPS only
         if (uri.Scheme != Uri.UriSchemeHttps)
         {
             return false;
         }
 
-        // Enforce exact host match
-        if (!string.Equals(uri.Host, "mapr.tax.gov.me", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(uri.Host, InvoiceCheckUrlParts.Host, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        // Enforce exact path
-        if (!uri.AbsolutePath.Equals("/ic/", StringComparison.OrdinalIgnoreCase))
+        if (!uri.AbsolutePath.Equals(InvoiceCheckUrlParts.AbsolutePath, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        // Ensure fragment contains expected verify pattern
-        if (!uri.Fragment.StartsWith("#/verify?iic=", StringComparison.OrdinalIgnoreCase))
+        if (!uri.Fragment.StartsWith(InvoiceCheckUrlParts.FragmentIicPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
