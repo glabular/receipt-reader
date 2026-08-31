@@ -1,4 +1,5 @@
 using ReceiptReader.Services.Invoices;
+using ReceiptReader.Services.Messaging.ComposeWizard;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 
@@ -7,13 +8,16 @@ namespace ReceiptReader.Services.Messaging.Handlers;
 internal sealed class TextMessageHandler : ITelegramMessageHandler
 {
     private readonly InvoiceUrlSubmissionService _invoiceUrlSubmissionService;
+    private readonly ComposeWizardService _composeWizardService;
     private readonly ILogger<TextMessageHandler> _logger;
 
     public TextMessageHandler(
         InvoiceUrlSubmissionService invoiceUrlSubmissionService,
+        ComposeWizardService composeWizardService,
         ILogger<TextMessageHandler> logger)
     {
         _invoiceUrlSubmissionService = invoiceUrlSubmissionService;
+        _composeWizardService = composeWizardService;
         _logger = logger;
     }
 
@@ -31,41 +35,72 @@ internal sealed class TextMessageHandler : ITelegramMessageHandler
 
         var candidate = context.Message.Text?.Trim();
 
-        if (!UrlValidator.IsUrlValid(candidate))
+        if (UrlValidator.IsUrlValid(candidate))
         {
-            _logger.LogInformation(
-                "Ignoring non-link text from user {TelegramUserId}",
-                dbUser.TelegramUserId);
+            _composeWizardService.ClearSession(dbUser.TelegramUserId);
 
-            await context.Bot.SendMessage(
-                context.Message.Chat.Id,
-                UnsupportedMessageCopy.Guidance,
-                cancellationToken: cancellationToken);
+            try
+            {
+                _logger.LogInformation(
+                    "User {TelegramUserId} submitted a valid receipt link: {Url}",
+                    dbUser.TelegramUserId,
+                    candidate);
+
+                await _invoiceUrlSubmissionService.SubmitAsync(
+                    context.Bot,
+                    context.Message.Chat.Id,
+                    candidate!,
+                    dbUser,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing text message from user {TelegramUserId}", dbUser.TelegramUserId);
+
+                await context.Bot.SendMessage(
+                    context.Message.Chat.Id,
+                    "⚠️ Unexpected error occurred.",
+                    cancellationToken: cancellationToken);
+            }
+
             return;
         }
 
-        try
+        if (_composeWizardService.HasActiveSession(dbUser.TelegramUserId))
         {
-            _logger.LogInformation(
-                "User {TelegramUserId} submitted a valid receipt link: {Url}",
-                dbUser.TelegramUserId,
-                candidate);
+            try
+            {
+                await _composeWizardService.TryHandleAnswerAsync(
+                    context.Bot,
+                    context.Message.Chat.Id,
+                    dbUser.TelegramUserId,
+                    candidate ?? string.Empty,
+                    dbUser,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error handling compose wizard answer from user {TelegramUserId}",
+                    dbUser.TelegramUserId);
 
-            await _invoiceUrlSubmissionService.SubmitAsync(
-                context.Bot,
-                context.Message.Chat.Id,
-                candidate!,
-                dbUser,
-                cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing text message from user {TelegramUserId}", dbUser.TelegramUserId);
+                await context.Bot.SendMessage(
+                    context.Message.Chat.Id,
+                    "⚠️ Unexpected error occurred.",
+                    cancellationToken: cancellationToken);
+            }
 
-            await context.Bot.SendMessage(
-                context.Message.Chat.Id,
-                "⚠️ Unexpected error occurred.",
-                cancellationToken: cancellationToken);
+            return;
         }
+
+        _logger.LogInformation(
+            "Ignoring non-link text from user {TelegramUserId}",
+            dbUser.TelegramUserId);
+
+        await context.Bot.SendMessage(
+            context.Message.Chat.Id,
+            UnsupportedMessageCopy.Guidance,
+            cancellationToken: cancellationToken);
     }
 }

@@ -1,4 +1,5 @@
 using ReceiptReader.Services.Invoices;
+using ReceiptReader.Services.Messaging.ComposeWizard;
 using ReceiptReader.Services.Photos;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
@@ -9,15 +10,18 @@ internal sealed class PhotoMessageHandler : ITelegramMessageHandler
 {
     private readonly QrExtractionService _qrExtractionService;
     private readonly InvoiceUrlSubmissionService _invoiceUrlSubmissionService;
+    private readonly ComposeWizardService _composeWizardService;
     private readonly ILogger<PhotoMessageHandler> _logger;
 
     public PhotoMessageHandler(
         QrExtractionService qrExtractionService,
         InvoiceUrlSubmissionService invoiceUrlSubmissionService,
+        ComposeWizardService composeWizardService,
         ILogger<PhotoMessageHandler> logger)
     {
         _qrExtractionService = qrExtractionService;
         _invoiceUrlSubmissionService = invoiceUrlSubmissionService;
+        _composeWizardService = composeWizardService;
         _logger = logger;
     }
 
@@ -42,6 +46,7 @@ internal sealed class PhotoMessageHandler : ITelegramMessageHandler
                 context.Message.Chat.Id,
                 "I couldn't detect a valid photo. Please resend the receipt image with the QR code clearly visible.",
                 cancellationToken: cancellationToken);
+            await RePromptWizardIfActiveAsync(context, dbUser.TelegramUserId, cancellationToken);
             return;
         }
 
@@ -56,7 +61,7 @@ internal sealed class PhotoMessageHandler : ITelegramMessageHandler
                     context.Message.Chat.Id,
                     "🔍 No QR code detected. Please make sure the photo is clear.",
                     cancellationToken: cancellationToken);
-
+                await RePromptWizardIfActiveAsync(context, dbUser.TelegramUserId, cancellationToken);
                 return;
             }
 
@@ -67,9 +72,11 @@ internal sealed class PhotoMessageHandler : ITelegramMessageHandler
                     "⚠️ This QR code is not a valid Montenegro tax receipt.",
                     cancellationToken: cancellationToken);
                 _logger.LogWarning("User {TelegramUserId} scanned an invalid QR code: {QrText}", dbUser.TelegramUserId, qrText);
-                
+                await RePromptWizardIfActiveAsync(context, dbUser.TelegramUserId, cancellationToken);
                 return;
             }
+
+            _composeWizardService.ClearSession(dbUser.TelegramUserId);
 
             _logger.LogInformation("User {TelegramUserId} scanned a valid QR code: {QrText}", dbUser.TelegramUserId, qrText);
             await _invoiceUrlSubmissionService.SubmitAsync(
@@ -82,11 +89,28 @@ internal sealed class PhotoMessageHandler : ITelegramMessageHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing photo message from user {TelegramUserId}", dbUser.TelegramUserId);
-            
+
             await context.Bot.SendMessage(
                 context.Message.Chat.Id,
                 "⚠️ Unexpected error occurred.",
                 cancellationToken: cancellationToken);
         }
+    }
+
+    private async Task RePromptWizardIfActiveAsync(
+        TelegramMessageContext context,
+        long telegramUserId,
+        CancellationToken cancellationToken)
+    {
+        var prompt = _composeWizardService.GetCurrentPrompt(telegramUserId);
+        if (prompt is null)
+        {
+            return;
+        }
+
+        await context.Bot.SendMessage(
+            context.Message.Chat.Id,
+            "Compose wizard is still active.\n\n" + prompt,
+            cancellationToken: cancellationToken);
     }
 }

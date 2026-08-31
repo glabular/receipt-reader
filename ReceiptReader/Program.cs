@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using ReceiptReader.Data;
 using ReceiptReader.Services.Invoices;
 using ReceiptReader.Services.Messaging;
+using ReceiptReader.Services.Messaging.ComposeWizard;
 using ReceiptReader.Services.Messaging.Handlers;
 using ReceiptReader.Services.Photos;
 using ReceiptReader.Logging;
@@ -87,6 +88,8 @@ internal class Program
         services.AddScoped<ReceiptClient>();
         services.AddSingleton<WeChatQrReader>();
         services.AddScoped<CommandsHandler>();
+        services.AddSingleton<ComposeWizardSessionStore>();
+        services.AddScoped<ComposeWizardService>();
         services.AddScoped<TelegramUpdateProcessor>();
         services.AddScoped<TelegramMessageClassifier>();
         services.AddScoped<IMessageRouter, MessageRouter>();

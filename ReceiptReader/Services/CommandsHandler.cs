@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using ReceiptReader.Services.Messaging.Commands;
+using ReceiptReader.Services.Messaging.ComposeWizard;
 
 namespace ReceiptReader.Services;
 
@@ -8,17 +9,20 @@ internal sealed class CommandsHandler
     private readonly InvoiceService _invoiceService;
     private readonly SpendingSummaryFormatter _spendingSummaryFormatter;
     private readonly SpendingAccessResolver _spendingAccessResolver;
+    private readonly ComposeWizardService _composeWizardService;
     private readonly ILogger<CommandsHandler> _logger;
 
     public CommandsHandler(
         InvoiceService invoiceService,
         SpendingSummaryFormatter spendingSummaryFormatter,
         SpendingAccessResolver spendingAccessResolver,
+        ComposeWizardService composeWizardService,
         ILogger<CommandsHandler> logger)
     {
         _invoiceService = invoiceService;
         _spendingSummaryFormatter = spendingSummaryFormatter;
         _spendingAccessResolver = spendingAccessResolver;
+        _composeWizardService = composeWizardService;
         _logger = logger;
     }
 
@@ -34,6 +38,14 @@ internal sealed class CommandsHandler
 
             case "/help":
                 return BuildSingleMessageResult(GetHelpText());
+
+            case "/compose":
+                return BuildSingleMessageResult(_composeWizardService.Start(request.TelegramUserId));
+
+            case "/cancel":
+                return BuildSingleMessageResult(
+                    _composeWizardService.Cancel(request.TelegramUserId)
+                    ?? "Nothing to cancel. Use /compose to build a receipt URL step by step.");
 
             case "/spent_month":
                 return await HandleSpentMonthAsync(request, args, cancellationToken);
@@ -52,16 +64,20 @@ internal sealed class CommandsHandler
         return "Available commands:\n\n" +
                "/start – Introduction\n" +
                "/help – Show available commands\n" +
+               "/compose – Build a tax receipt URL from IIC, TIN, date, and price\n" +
+               "/cancel – Cancel an in-progress /compose wizard\n" +
                "/spent_month – View spending for current month or use M[ M] YY|YYYY\n" +
                "/spent_year – View spending for current year or use YY|YYYY\n" +
                "Or use the Menu button\n\n" +
-               "To analyze a receipt, send a clear photo with a visible QR code, or a valid Montenegro tax receipt link.";
+               "To analyze a receipt, send a clear photo with a visible QR code, or a valid Montenegro tax receipt link.\n" +
+               "If you only have the printed fields, use /compose.";
     }
 
     private static string GetStartText()
     {
         return "Welcome.\n\n" +
                "Send a receipt photo with a clearly visible QR code, or a valid Montenegro tax receipt link.\n" +
+               "If you only have the printed fields (IIC, TIN, date, price), use /compose.\n" +
                "I will extract the items and calculate the total amount.";
     }
 
