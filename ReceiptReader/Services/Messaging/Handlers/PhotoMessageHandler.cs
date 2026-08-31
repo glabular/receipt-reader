@@ -2,26 +2,22 @@ using ReceiptReader.Services.Invoices;
 using ReceiptReader.Services.Photos;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 
 namespace ReceiptReader.Services.Messaging.Handlers;
 
 internal sealed class PhotoMessageHandler : ITelegramMessageHandler
 {
     private readonly QrExtractionService _qrExtractionService;
-    private readonly InvoiceProcessingService _invoiceProcessingService;
-    private readonly InvoiceMessageFormatter _invoiceMessageFormatter;
+    private readonly InvoiceUrlSubmissionService _invoiceUrlSubmissionService;
     private readonly ILogger<PhotoMessageHandler> _logger;
 
     public PhotoMessageHandler(
         QrExtractionService qrExtractionService,
-        InvoiceProcessingService invoiceProcessingService,
-        InvoiceMessageFormatter invoiceMessageFormatter,
+        InvoiceUrlSubmissionService invoiceUrlSubmissionService,
         ILogger<PhotoMessageHandler> logger)
     {
         _qrExtractionService = qrExtractionService;
-        _invoiceProcessingService = invoiceProcessingService;
-        _invoiceMessageFormatter = invoiceMessageFormatter;
+        _invoiceUrlSubmissionService = invoiceUrlSubmissionService;
         _logger = logger;
     }
 
@@ -76,53 +72,12 @@ internal sealed class PhotoMessageHandler : ITelegramMessageHandler
             }
 
             _logger.LogInformation("User {TelegramUserId} scanned a valid QR code: {QrText}", dbUser.TelegramUserId, qrText);
-            await context.Bot.SendMessage(
+            await _invoiceUrlSubmissionService.SubmitAsync(
+                context.Bot,
                 context.Message.Chat.Id,
-                "📄 Your receipt is being processed. This may take a few moments.",
-                cancellationToken: cancellationToken);
-
-            var result = await _invoiceProcessingService.ProcessAsync(qrText, dbUser, cancellationToken);
-
-            switch (result.Status)
-            {
-                case InvoiceProcessingStatus.Duplicate:
-                    await context.Bot.SendMessage(
-                        context.Message.Chat.Id,
-                        "⚠️ This receipt already exists.",
-                        cancellationToken: cancellationToken);
-                    break;
-
-                case InvoiceProcessingStatus.InvoiceNull:
-                    await context.Bot.SendMessage(
-                        context.Message.Chat.Id,
-                        "❌ Could not process invoice.",
-                        cancellationToken: cancellationToken);
-                    break;
-
-                case InvoiceProcessingStatus.Success:
-                    if (result.Invoice is null)
-                    {
-                        await context.Bot.SendMessage(
-                            context.Message.Chat.Id,
-                            "⚠️ Unexpected error occurred.",
-                            cancellationToken: cancellationToken);
-                        break;
-                    }
-
-                    await context.Bot.SendMessage(
-                        chatId: context.Message.Chat.Id,
-                        text: _invoiceMessageFormatter.BuildInvoiceMessage(result.Invoice),
-                        parseMode: ParseMode.Html,
-                        cancellationToken: cancellationToken);
-                    break;
-
-                default:
-                    await context.Bot.SendMessage(
-                        context.Message.Chat.Id,
-                        "⚠️ Unexpected error occurred.",
-                        cancellationToken: cancellationToken);
-                    break;
-            }
+                qrText,
+                dbUser,
+                cancellationToken);
         }
         catch (Exception ex)
         {

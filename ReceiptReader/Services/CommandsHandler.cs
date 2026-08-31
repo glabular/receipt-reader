@@ -55,13 +55,13 @@ internal sealed class CommandsHandler
                "/spent_month – View spending for current month or use M[ M] YY|YYYY\n" +
                "/spent_year – View spending for current year or use YY|YYYY\n" +
                "Or use the Menu button\n\n" +
-               "To analyze a receipt, send a clear photo with a visible QR code.";
+               "To analyze a receipt, send a clear photo with a visible QR code, or a valid Montenegro tax receipt link.";
     }
 
     private static string GetStartText()
     {
         return "Welcome.\n\n" +
-               "Send a receipt photo with a clearly visible QR code.\n" +
+               "Send a receipt photo with a clearly visible QR code, or a valid Montenegro tax receipt link.\n" +
                "I will extract the items and calculate the total amount.";
     }
 

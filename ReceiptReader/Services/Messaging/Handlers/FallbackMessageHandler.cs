@@ -25,7 +25,7 @@ internal sealed class FallbackMessageHandler : ITelegramMessageHandler
 
         await context.Bot.SendMessage(
             context.Message.Chat.Id,
-            "Please send a receipt photo with a visible QR code.",
+            UnsupportedMessageCopy.Guidance,
             cancellationToken: cancellationToken);
     }
 }

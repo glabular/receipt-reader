@@ -92,7 +92,9 @@ internal class Program
         services.AddScoped<IMessageRouter, MessageRouter>();
         services.AddScoped<CommandMessageHandler>();
         services.AddScoped<PhotoMessageHandler>();
+        services.AddScoped<TextMessageHandler>();
         services.AddScoped<FallbackMessageHandler>();
+        services.AddScoped<InvoiceUrlSubmissionService>();
         services.AddScoped<PhotoStorageService>(sp =>
             new PhotoStorageService(
                 logsDirectory,

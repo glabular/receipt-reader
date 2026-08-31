@@ -23,6 +23,7 @@ internal sealed class MessageRouter : IMessageRouter
         {
             Enums.MessageType.Command => _serviceProvider.GetRequiredService<CommandMessageHandler>(),
             Enums.MessageType.Photo => _serviceProvider.GetRequiredService<PhotoMessageHandler>(),
+            Enums.MessageType.Text => _serviceProvider.GetRequiredService<TextMessageHandler>(),
             _ => ResolveFallbackWithWarning(context)
         };
 
