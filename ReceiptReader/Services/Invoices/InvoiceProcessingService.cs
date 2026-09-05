@@ -24,7 +24,16 @@ internal sealed class InvoiceProcessingService
         TelegramUser telegramUser,
         CancellationToken cancellationToken = default)
     {
-        if (_invoiceService.InvoiceExists(url))
+        if (!TaxReceiptLink.TryParse(url, out var link))
+        {
+            _logger.LogWarning("Could not parse receipt URL: {Url}", url);
+            return new InvoiceProcessingResult
+            {
+                Status = InvoiceProcessingStatus.InvoiceNull
+            };
+        }
+
+        if (_invoiceService.InvoiceExistsByIic(link.InvoiceIdentificationCode))
         {
             return new InvoiceProcessingResult
             {
@@ -38,21 +47,27 @@ internal sealed class InvoiceProcessingService
 
             if (invoice is null)
             {
-                _logger.LogWarning("Invoice was null for URL: {Url}", url);
+                _logger.LogWarning(
+                    "Invoice was null for URL: {Url} (IIC: {Iic})",
+                    url,
+                    link.InvoiceIdentificationCode);
                 return new InvoiceProcessingResult
                 {
                     Status = InvoiceProcessingStatus.InvoiceNull
                 };
             }
 
+            link.ApplyTo(invoice);
+            invoice.URL = url;
             invoice.CreatedAt = DateTime.UtcNow;
             invoice.UserId = telegramUser.Id;
             invoice.TelegramUser = null;
             await _invoiceService.AddInvoiceAsync(invoice);
 
             _logger.LogInformation(
-                "Invoice added successfully for user {TelegramUserId} with URL: {Url}",
+                "Invoice added successfully for user {TelegramUserId} with IIC: {Iic} URL: {Url}",
                 telegramUser.TelegramUserId,
+                link.InvoiceIdentificationCode,
                 url);
 
             return new InvoiceProcessingResult
@@ -65,8 +80,9 @@ internal sealed class InvoiceProcessingService
         {
             _logger.LogError(
                 ex,
-                "Error adding invoice for user {TelegramUserId} with URL: {Url}",
+                "Error adding invoice for user {TelegramUserId} with IIC: {Iic} URL: {Url}",
                 telegramUser.TelegramUserId,
+                link.InvoiceIdentificationCode,
                 url);
 
             return new InvoiceProcessingResult

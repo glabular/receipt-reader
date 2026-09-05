@@ -222,9 +222,11 @@ internal sealed class TaxReceiptLink
     }
 
     /// <summary>
-    /// Copies link identity/metadata onto <paramref name="invoice"/>.
-    /// Does not set <see cref="Invoice.URL"/>, <see cref="Invoice.TotalSum"/>,
+    /// Copies link identity/addressing fields onto <paramref name="invoice"/>.
+    /// Does not set HTML-derived receipt content:
+    /// <see cref="Invoice.URL"/>, <see cref="Invoice.TotalSum"/>,
     /// <see cref="Invoice.ShopName"/>, <see cref="Invoice.ShoppingDate"/>, or <see cref="Invoice.CreatedAt"/>.
+    /// URL <c>crtd</c>/<c>prc</c> are intentionally not persisted — the page HTML is the source of truth.
     /// </summary>
     public void ApplyTo(Invoice invoice)
     {
@@ -232,7 +234,6 @@ internal sealed class TaxReceiptLink
 
         invoice.InvoiceIdentificationCode = InvoiceIdentificationCode;
         invoice.TaxpayerIdentificationNumber = TaxpayerIdentificationNumber;
-        invoice.Created = Created;
         invoice.OrdinalNumber = OrdinalNumber;
         invoice.BusinessUnitCode = BusinessUnitCode;
         invoice.CashRegisterCode = CashRegisterCode;

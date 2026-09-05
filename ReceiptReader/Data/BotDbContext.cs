@@ -16,8 +16,12 @@ internal class BotDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Invoice>()
-            .HasIndex(i => i.URL)
+            .HasIndex(i => i.InvoiceIdentificationCode)
             .IsUnique();
+
+        modelBuilder.Entity<Invoice>()
+            .Property(i => i.InvoiceIdentificationCode)
+            .HasMaxLength(450);
 
         modelBuilder.Entity<TelegramUser>()
             .HasIndex(u => u.TelegramUserId)

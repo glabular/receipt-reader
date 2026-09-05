@@ -22,9 +22,9 @@ internal class InvoiceService
         await _dbContext.SaveChangesAsync();
     }
 
-    public bool InvoiceExists(string url)
+    public bool InvoiceExistsByIic(string invoiceIdentificationCode)
     {
-        return _dbContext.Invoices.Any(i => i.URL == url);
+        return _dbContext.Invoices.Any(i => i.InvoiceIdentificationCode == invoiceIdentificationCode);
     }
 
     public async Task<decimal?> GetMonthlyTotalAsync(long telegramUserId, int month, int year)

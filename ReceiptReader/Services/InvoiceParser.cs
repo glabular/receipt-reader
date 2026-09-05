@@ -39,7 +39,6 @@ internal sealed class InvoiceParser
             URL = pageUrl,
             InvoiceIdentificationCode = link.InvoiceIdentificationCode,
             TaxpayerIdentificationNumber = link.TaxpayerIdentificationNumber,
-            Created = link.Created,
         };
 
         link.ApplyTo(result);
