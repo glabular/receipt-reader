@@ -1,7 +1,7 @@
 namespace ReceiptReader.Services.Messaging.ComposeWizard;
 
 /// <summary>
-/// Per-user state while <c>/compose</c> is collecting IIC, TIN, date, and price.
+/// Per-user state while <c>/compose</c> is collecting IIC, TIN, and date.
 /// </summary>
 internal sealed class ComposeWizardSession
 {
@@ -24,11 +24,6 @@ internal sealed class ComposeWizardSession
     /// Receipt date as midnight (<c>00:00:00</c>) using the server's time-zone offset. Set after the date step; otherwise <see langword="null"/>.
     /// </summary>
     public DateTimeOffset? Created { get; set; }
-
-    /// <summary>
-    /// URL key <c>prc</c>. Receipt labels: Total price; ukupna cijena. Set after the price step; otherwise <see langword="null"/>.
-    /// </summary>
-    public decimal? TotalPrice { get; set; }
 
     /// <summary>
     /// When this session was created (UTC).

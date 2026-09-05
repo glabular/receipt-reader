@@ -12,8 +12,5 @@ internal enum ComposeWizardStep
     AwaitingTin,
 
     /// <summary>Issue date only; time is fixed at midnight with the process local offset.</summary>
-    AwaitingDate,
-
-    /// <summary>Total price (<c>prc</c>).</summary>
-    AwaitingPrice
+    AwaitingDate
 }

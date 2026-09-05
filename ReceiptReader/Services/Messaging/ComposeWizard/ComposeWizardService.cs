@@ -8,9 +8,15 @@ namespace ReceiptReader.Services.Messaging.ComposeWizard;
 
 /// <summary>
 /// Multi-step Telegram dialog that collects InvoiceCheck parameters, composes the URL, and submits it.
+/// Price (<c>prc</c>) is not collected; a placeholder is used because any value opens the receipt.
 /// </summary>
 internal sealed class ComposeWizardService
 {
+    /// <summary>
+    /// Placeholder <c>prc</c> for composed URLs. The tax site accepts any non-negative amount.
+    /// </summary>
+    private const decimal PlaceholderTotalPrice = 0m;
+
     private static readonly string[] DateFormats =
     [
         "yyyy-MM-dd",
@@ -136,23 +142,6 @@ internal sealed class ComposeWizardService
                 }
 
                 session.Created = created;
-                session.Step = ComposeWizardStep.AwaitingPrice;
-                _sessionStore.Set(telegramUserId, session);
-                await bot.SendMessage(chatId, BuildPrompt(session.Step), cancellationToken: cancellationToken);
-                return true;
-
-            case ComposeWizardStep.AwaitingPrice:
-                if (!TryParsePrice(trimmed, out var price))
-                {
-                    await bot.SendMessage(
-                        chatId,
-                        "Could not parse that price. Send a non-negative number, e.g. 12.50.\n\n" +
-                        BuildPrompt(session.Step),
-                        cancellationToken: cancellationToken);
-                    return true;
-                }
-
-                session.TotalPrice = price;
                 await CompleteAndSubmitAsync(bot, chatId, telegramUserId, session, dbUser, cancellationToken);
                 return true;
 
@@ -180,8 +169,7 @@ internal sealed class ComposeWizardService
     {
         if (session.InvoiceIdentificationCode is null
             || session.TaxpayerIdentificationNumber is null
-            || session.Created is null
-            || session.TotalPrice is null)
+            || session.Created is null)
         {
             _logger.LogError(
                 "Compose wizard for user {TelegramUserId} completed with missing fields",
@@ -199,7 +187,7 @@ internal sealed class ComposeWizardService
             InvoiceIdentificationCode = session.InvoiceIdentificationCode,
             TaxpayerIdentificationNumber = session.TaxpayerIdentificationNumber,
             Created = session.Created.Value,
-            TotalPrice = session.TotalPrice.Value
+            TotalPrice = PlaceholderTotalPrice
         };
 
         var url = link.ComposeUrl();
@@ -232,29 +220,15 @@ internal sealed class ComposeWizardService
         return true;
     }
 
-    private static bool TryParsePrice(string input, out decimal price)
-    {
-        price = default;
-        var normalized = input.Replace(',', '.');
-        if (!decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out price))
-        {
-            return false;
-        }
-
-        return price >= 0;
-    }
-
     private static string BuildPrompt(ComposeWizardStep step) => step switch
     {
         ComposeWizardStep.AwaitingIic =>
-            "Compose receipt URL — step 1/4\n\nSend the IIC / IKOF (invoice identification code).",
+            "Compose receipt URL — step 1/3\n\nSend the IIC / IKOF (invoice identification code).",
         ComposeWizardStep.AwaitingTin =>
-            "Compose receipt URL — step 2/4\n\nSend the TIN / PIB (taxpayer identification number).",
+            "Compose receipt URL — step 2/3\n\nSend the TIN / PIB (taxpayer identification number).",
         ComposeWizardStep.AwaitingDate =>
-            "Compose receipt URL — step 3/4\n\nSend the issue date only (time will be set to 00:00:00).\n" +
+            "Compose receipt URL — step 3/3\n\nSend the issue date only (time will be set to 00:00:00).\n" +
             "Formats: yyyy-MM-dd, dd.MM.yyyy, or dd/MM/yyyy.",
-        ComposeWizardStep.AwaitingPrice =>
-            "Compose receipt URL — step 4/4\n\nSend the total price (e.g. 12.50).",
         _ => "Compose session error. Use /compose to start again."
     };
 }

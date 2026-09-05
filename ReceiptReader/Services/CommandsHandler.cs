@@ -64,7 +64,7 @@ internal sealed class CommandsHandler
         return "Available commands:\n\n" +
                "/start – Introduction\n" +
                "/help – Show available commands\n" +
-               "/compose – Build a tax receipt URL from IIC, TIN, date, and price\n" +
+               "/compose – Build a tax receipt URL from IIC, TIN, and date\n" +
                "/cancel – Cancel an in-progress /compose wizard\n" +
                "/spent_month – View spending for current month or use M[ M] YY|YYYY\n" +
                "/spent_year – View spending for current year or use YY|YYYY\n" +
@@ -77,7 +77,7 @@ internal sealed class CommandsHandler
     {
         return "Welcome.\n\n" +
                "Send a receipt photo with a clearly visible QR code, or a valid Montenegro tax receipt link.\n" +
-               "If you only have the printed fields (IIC, TIN, date, price), use /compose.\n" +
+               "If you only have the printed fields (IIC, TIN, date), use /compose.\n" +
                "I will extract the items and calculate the total amount.";
     }
 
