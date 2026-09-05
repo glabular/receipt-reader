@@ -23,14 +23,26 @@ internal sealed class InvoiceParser
             return null;
         }
 
+        if (!TaxReceiptLink.TryParse(pageUrl, out var link))
+        {
+            Console.WriteLine("Parsing failed: invoice URL invalid");
+
+            return null;
+        }
+
         var result = new Invoice
         {
             TotalSum = total.Value,
             ShoppingDate = ParseDate(htmlDoc),
             ShopName = ParseShopName(htmlDoc),
             BoughtItems = ParseInvoiceItems(htmlDoc),
-            URL = pageUrl
+            URL = pageUrl,
+            InvoiceIdentificationCode = link.InvoiceIdentificationCode,
+            TaxpayerIdentificationNumber = link.TaxpayerIdentificationNumber,
+            Created = link.Created,
         };
+
+        link.ApplyTo(result);
 
         return result;
     }
