@@ -14,7 +14,9 @@ internal sealed class ReceiptClient : IDisposable
         _browser = new BrowserEngine(browserTimeout);
     }
 
-    public async Task<Invoice?> GetInvoiceAsync(string url, CancellationToken cancellationToken = default)
+    public async Task<InvoicePageContent?> GetInvoicePageContentAsync(
+        string url,
+        CancellationToken cancellationToken = default)
     {
         await BrowserSemaphore.WaitAsync(cancellationToken);
 
@@ -22,7 +24,7 @@ internal sealed class ReceiptClient : IDisposable
         {
             var pageSource = _browser.GetPageSource(url);
 
-            return InvoiceParser.ParseInvoicePage(url, pageSource);
+            return InvoiceParser.ParseInvoicePage(pageSource);
         }
         finally
         {

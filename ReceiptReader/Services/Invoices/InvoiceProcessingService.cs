@@ -43,12 +43,12 @@ internal sealed class InvoiceProcessingService
 
         try
         {
-            var invoice = await _receiptClient.GetInvoiceAsync(url, cancellationToken);
+            var pageContent = await _receiptClient.GetInvoicePageContentAsync(url, cancellationToken);
 
-            if (invoice is null)
+            if (pageContent is null)
             {
                 _logger.LogWarning(
-                    "Invoice was null for URL: {Url} (IIC: {Iic})",
+                    "Invoice page content was null for URL: {Url} (IIC: {Iic})",
                     url,
                     link.InvoiceIdentificationCode);
                 return new InvoiceProcessingResult
@@ -57,11 +57,21 @@ internal sealed class InvoiceProcessingService
                 };
             }
 
+            var invoice = new Invoice
+            {
+                TotalSum = pageContent.TotalSum,
+                ShoppingDate = pageContent.ShoppingDate,
+                ShopName = pageContent.ShopName,
+                BoughtItems = pageContent.BoughtItems,
+                URL = url,
+                InvoiceIdentificationCode = link.InvoiceIdentificationCode,
+                TaxpayerIdentificationNumber = link.TaxpayerIdentificationNumber,
+                CreatedAt = DateTime.UtcNow,
+                UserId = telegramUser.Id
+            };
+
             link.ApplyTo(invoice);
-            invoice.URL = url;
-            invoice.CreatedAt = DateTime.UtcNow;
-            invoice.UserId = telegramUser.Id;
-            invoice.TelegramUser = null;
+
             await _invoiceService.AddInvoiceAsync(invoice);
 
             _logger.LogInformation(

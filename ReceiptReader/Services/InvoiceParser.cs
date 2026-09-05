@@ -7,7 +7,7 @@ namespace ReceiptReader.Services;
 
 internal sealed class InvoiceParser
 {
-    public static Invoice? ParseInvoicePage(string pageUrl, string pageSource)
+    public static InvoicePageContent? ParseInvoicePage(string pageSource)
     {
         var htmlDoc = new HtmlDocument();
 
@@ -23,27 +23,13 @@ internal sealed class InvoiceParser
             return null;
         }
 
-        if (!TaxReceiptLink.TryParse(pageUrl, out var link))
-        {
-            Console.WriteLine("Parsing failed: invoice URL invalid");
-
-            return null;
-        }
-
-        var result = new Invoice
+        return new InvoicePageContent
         {
             TotalSum = total.Value,
             ShoppingDate = ParseDate(htmlDoc),
             ShopName = ParseShopName(htmlDoc),
-            BoughtItems = ParseInvoiceItems(htmlDoc),
-            URL = pageUrl,
-            InvoiceIdentificationCode = link.InvoiceIdentificationCode,
-            TaxpayerIdentificationNumber = link.TaxpayerIdentificationNumber,
+            BoughtItems = ParseInvoiceItems(htmlDoc)
         };
-
-        link.ApplyTo(result);
-
-        return result;
     }
 
     private static List<Product> ParseInvoiceItems(HtmlDocument htmlDoc)
