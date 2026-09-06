@@ -93,8 +93,8 @@ internal sealed class TaxReceiptLink
     }
 
     /// <summary>
-    /// Parses an InvoiceCheck URL into link parameters.
-    /// Uses the same host/path/fragment shell rules as <c>UrlValidator</c>.
+    /// Accepts a trimmed InvoiceCheck URL if it targets <c>mapr.tax.gov.me</c> and has <c>iic</c> + <c>tin</c>.
+    /// Other query fields are best-effort — the browser page HTML is the source of truth for receipt content.
     /// </summary>
     public static bool TryParse(string? url, out TaxReceiptLink link)
     {
@@ -105,32 +105,13 @@ internal sealed class TaxReceiptLink
             return false;
         }
 
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        var trimmed = url.Trim();
+        if (!trimmed.StartsWith(InvoiceCheckUrlParts.ComposeBase, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        if (uri.Scheme != Uri.UriSchemeHttps)
-        {
-            return false;
-        }
-
-        if (!string.Equals(uri.Host, InvoiceCheckUrlParts.Host, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (!uri.AbsolutePath.Equals(InvoiceCheckUrlParts.AbsolutePath, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (!uri.Fragment.StartsWith(InvoiceCheckUrlParts.FragmentIicPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (!TryParseFragmentQuery(uri.Fragment, out var values))
+        if (!TryParseQuery(trimmed[InvoiceCheckUrlParts.ComposeBase.Length..], out var values))
         {
             return false;
         }
@@ -145,64 +126,42 @@ internal sealed class TaxReceiptLink
             return false;
         }
 
-        if (!values.TryGetValue("crtd", out var crtdRaw)
-            || !TryParseCreated(crtdRaw, out var created))
+        DateTimeOffset created = default;
+        if (values.TryGetValue("crtd", out var crtdRaw) && !string.IsNullOrWhiteSpace(crtdRaw))
         {
-            return false;
+            _ = DateTimeOffset.TryParse(crtdRaw, CultureInfo.InvariantCulture, DateTimeStyles.None, out created);
         }
 
-        if (!values.TryGetValue("prc", out var prcRaw)
-            || !decimal.TryParse(
-                prcRaw,
-                NumberStyles.Number,
-                CultureInfo.InvariantCulture,
-                out var totalPrice)
-            || totalPrice < 0m)
+        decimal totalPrice = 0m;
+        if (values.TryGetValue("prc", out var prcRaw)
+            && decimal.TryParse(prcRaw, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsedPrice)
+            && parsedPrice >= 0m)
         {
-            return false;
+            totalPrice = parsedPrice;
         }
 
         int? ordinal = null;
-        if (values.TryGetValue("ord", out var ordRaw))
+        if (values.TryGetValue("ord", out var ordRaw)
+            && int.TryParse(ordRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ord))
         {
-            if (!int.TryParse(ordRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ord))
-            {
-                return false;
-            }
-
             ordinal = ord;
         }
 
         string? businessUnit = null;
-        if (values.TryGetValue("bu", out var buRaw))
+        if (values.TryGetValue("bu", out var buRaw) && !string.IsNullOrWhiteSpace(buRaw))
         {
-            if (string.IsNullOrWhiteSpace(buRaw))
-            {
-                return false;
-            }
-
             businessUnit = buRaw;
         }
 
         string? cashRegister = null;
-        if (values.TryGetValue("cr", out var crRaw))
+        if (values.TryGetValue("cr", out var crRaw) && !string.IsNullOrWhiteSpace(crRaw))
         {
-            if (string.IsNullOrWhiteSpace(crRaw))
-            {
-                return false;
-            }
-
             cashRegister = crRaw;
         }
 
         string? software = null;
-        if (values.TryGetValue("sw", out var swRaw))
+        if (values.TryGetValue("sw", out var swRaw) && !string.IsNullOrWhiteSpace(swRaw))
         {
-            if (string.IsNullOrWhiteSpace(swRaw))
-            {
-                return false;
-            }
-
             software = swRaw;
         }
 
@@ -240,18 +199,10 @@ internal sealed class TaxReceiptLink
         invoice.SoftwareCode = SoftwareCode;
     }
 
-    private static bool TryParseFragmentQuery(
-        string fragment,
-        out Dictionary<string, string> values)
+    private static bool TryParseQuery(string query, out Dictionary<string, string> values)
     {
         values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        if (!fragment.StartsWith(InvoiceCheckUrlParts.FragmentPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        var query = fragment[InvoiceCheckUrlParts.FragmentPrefix.Length..];
         if (query.Length == 0)
         {
             return false;
@@ -262,7 +213,7 @@ internal sealed class TaxReceiptLink
             var separatorIndex = part.IndexOf('=');
             if (separatorIndex <= 0)
             {
-                return false;
+                continue;
             }
 
             var key = Uri.UnescapeDataString(part[..separatorIndex]);
@@ -270,33 +221,13 @@ internal sealed class TaxReceiptLink
 
             if (string.IsNullOrEmpty(key))
             {
-                return false;
+                continue;
             }
 
-            // First occurrence wins; duplicate keys are ignored.
             values.TryAdd(key, value);
         }
 
         return values.Count > 0;
-    }
-
-    private static bool TryParseCreated(string raw, out DateTimeOffset created)
-    {
-        if (DateTimeOffset.TryParseExact(
-                raw,
-                "yyyy-MM-dd'T'HH:mm:sszzz",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out created))
-        {
-            return true;
-        }
-
-        return DateTimeOffset.TryParse(
-            raw,
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.None,
-            out created);
     }
 
     private static void AppendQueryParam(

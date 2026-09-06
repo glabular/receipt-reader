@@ -13,5 +13,8 @@ internal static class InvoiceCheckUrlParts
 
     public const string FragmentIicPrefix = FragmentPrefix + "iic=";
 
+    /// <summary>
+    /// Full InvoiceCheck URL prefix including scheme, host, path, and fragment query start.
+    /// </summary>
     public const string ComposeBase = "https://" + Host + AbsolutePath + FragmentPrefix;
 }

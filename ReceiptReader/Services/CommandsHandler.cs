@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using ReceiptReader.Services.Messaging;
 using ReceiptReader.Services.Messaging.Commands;
 using ReceiptReader.Services.Messaging.ComposeWizard;
 
@@ -45,7 +46,7 @@ internal sealed class CommandsHandler
             case "/cancel":
                 return BuildSingleMessageResult(
                     _composeWizardService.Cancel(request.TelegramUserId)
-                    ?? "Nothing to cancel. Use /compose to build a receipt URL step by step.");
+                    ?? "Nothing to cancel.\n\n" + ReceiptIntakeCopy.HowToSubmit);
 
             case "/spent_month":
                 return await HandleSpentMonthAsync(request, args, cancellationToken);
@@ -69,16 +70,14 @@ internal sealed class CommandsHandler
                "/spent_month – View spending for current month or use M[ M] YY|YYYY\n" +
                "/spent_year – View spending for current year or use YY|YYYY\n" +
                "Or use the Menu button\n\n" +
-               "To analyze a receipt, send a clear photo with a visible QR code, or a valid Montenegro tax receipt link.\n" +
-               "If you only have the printed fields, use /compose.";
+               ReceiptIntakeCopy.HowToSubmit;
     }
 
     private static string GetStartText()
     {
         return "Welcome.\n\n" +
-               "Send a receipt photo with a clearly visible QR code, or a valid Montenegro tax receipt link.\n" +
-               "If you only have the printed fields (IIC, TIN, date), use /compose.\n" +
-               "I will extract the items and calculate the total amount.";
+               ReceiptIntakeCopy.HowToSubmit + "\n\n" +
+               "I open the tax page and extract the items and total amount.";
     }
 
     private async Task<CommandResult> HandleSpentMonthAsync(

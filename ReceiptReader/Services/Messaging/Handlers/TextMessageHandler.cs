@@ -66,6 +66,21 @@ internal sealed class TextMessageHandler : ITelegramMessageHandler
             return;
         }
 
+        if (candidate is not null
+            && candidate.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation(
+                "Rejected non-tax URL from user {TelegramUserId}: {Text}",
+                dbUser.TelegramUserId,
+                candidate);
+
+            await context.Bot.SendMessage(
+                context.Message.Chat.Id,
+                ReceiptIntakeCopy.InvalidLink,
+                cancellationToken: cancellationToken);
+            return;
+        }
+
         if (_composeWizardService.HasActiveSession(dbUser.TelegramUserId))
         {
             try

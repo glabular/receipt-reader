@@ -5,8 +5,8 @@ namespace ReceiptReader.Services;
 internal sealed class UrlValidator
 {
     /// <summary>
-    /// Whether <paramref name="url"/> is a fully parseable InvoiceCheck link.
-    /// Delegates to <see cref="TaxReceiptLink.TryParse"/> so routing and persistence agree.
+    /// Whether trimmed <paramref name="url"/> is an InvoiceCheck link we will open in the browser.
+    /// Same gate as <see cref="TaxReceiptLink.TryParse"/>: mapr.tax.gov.me prefix + iic + tin.
     /// </summary>
     public static bool IsUrlValid(string? url) => TaxReceiptLink.TryParse(url, out _);
 }

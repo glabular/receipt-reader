@@ -47,7 +47,8 @@ internal sealed class ComposeWizardService
     {
         var session = new ComposeWizardSession();
         _sessionStore.Set(telegramUserId, session);
-        return BuildPrompt(ComposeWizardStep.AwaitingIic);
+        return "Or paste a mapr.tax.gov.me InvoiceCheck link anytime to skip this wizard.\n\n" +
+               BuildPrompt(ComposeWizardStep.AwaitingIic);
     }
 
     /// <summary>
@@ -61,7 +62,7 @@ internal sealed class ComposeWizardService
             return null;
         }
 
-        return "Compose cancelled. You can send a receipt photo, a tax link, or use /compose to start again.";
+        return "Compose cancelled.\n\n" + ReceiptIntakeCopy.HowToSubmit;
     }
 
     /// <summary>

@@ -25,7 +25,8 @@ internal sealed class BrowserEngine : IDisposable
 
     public string GetPageSource(string url)
     {
-        _driver.Navigate().GoToUrl(url);
+        // Telegram pastes may leave a literal space in the crtd offset; Chrome needs it encoded.
+        _driver.Navigate().GoToUrl(url.Replace(" ", "%20", StringComparison.Ordinal));
 
         // Wait for the page to load completely
         var wait = new WebDriverWait(_driver, _timeout);

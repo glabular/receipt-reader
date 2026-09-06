@@ -69,7 +69,7 @@ internal sealed class PhotoMessageHandler : ITelegramMessageHandler
             {
                 await context.Bot.SendMessage(
                     context.Message.Chat.Id,
-                    "⚠️ This QR code is not a valid Montenegro tax receipt.",
+                    ReceiptIntakeCopy.InvalidQr,
                     cancellationToken: cancellationToken);
                 _logger.LogWarning("User {TelegramUserId} scanned an invalid QR code: {QrText}", dbUser.TelegramUserId, qrText);
                 await RePromptWizardIfActiveAsync(context, dbUser.TelegramUserId, cancellationToken);
