@@ -30,8 +30,22 @@ namespace ReceiptReader.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BusinessUnitCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CashRegisterCode")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("InvoiceIdentificationCode")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("OrdinalNumber")
+                        .HasColumnType("int");
 
                     b.Property<string>("ShopName")
                         .HasColumnType("nvarchar(max)");
@@ -39,20 +53,27 @@ namespace ReceiptReader.Migrations
                     b.Property<DateTime?>("ShoppingDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("SoftwareCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxpayerIdentificationNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("TotalSum")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("URL")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("URL")
+                    b.HasIndex("InvoiceIdentificationCode")
                         .IsUnique();
 
                     b.HasIndex("UserId");
