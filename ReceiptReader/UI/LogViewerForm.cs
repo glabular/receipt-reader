@@ -30,7 +30,7 @@ internal sealed class LogViewerForm : Form
             Multiline = true,
             ReadOnly = true,
             ScrollBars = ScrollBars.Vertical,
-            WordWrap = false,
+            WordWrap = true,
             Font = new Font(FontFamily.GenericMonospace, 9f),
             HideSelection = false
         };
